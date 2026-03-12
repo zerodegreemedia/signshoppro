@@ -25,7 +25,7 @@ const clientSchema = z.object({
 type ClientFormValues = z.infer<typeof clientSchema>;
 
 interface ClientFormProps {
-  defaultValues?: Partial<Client & { tax_exempt?: boolean }>;
+  defaultValues?: Partial<Client>;
   onSubmit: (values: ClientFormValues) => void;
   isLoading?: boolean;
   submitLabel?: string;

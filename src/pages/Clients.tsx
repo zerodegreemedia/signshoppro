@@ -35,6 +35,7 @@ export default function Clients() {
     state?: string;
     zip?: string;
     notes?: string;
+    tax_exempt?: boolean;
   }) => {
     if (!user) return;
     createClient.mutate(
@@ -48,6 +49,7 @@ export default function Clients() {
         state: values.state || null,
         zip: values.zip || null,
         notes: values.notes || null,
+        tax_exempt: values.tax_exempt ?? false,
         created_by: user.id,
       },
       {

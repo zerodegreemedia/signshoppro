@@ -75,6 +75,7 @@ export default function ClientDetail() {
     state?: string;
     zip?: string;
     notes?: string;
+    tax_exempt?: boolean;
   }) => {
     updateClient.mutate(
       {
@@ -88,6 +89,7 @@ export default function ClientDetail() {
         state: values.state || null,
         zip: values.zip || null,
         notes: values.notes || null,
+        tax_exempt: values.tax_exempt ?? false,
       },
       { onSuccess: () => setEditOpen(false) }
     );

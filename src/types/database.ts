@@ -21,6 +21,7 @@ export interface Client {
   zip: string | null;
   notes: string | null;
   stripe_customer_id: string | null;
+  tax_exempt: boolean;
   profile_id: string | null;
   created_by: string;
   created_at: string;
