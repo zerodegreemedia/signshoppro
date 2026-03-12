@@ -69,7 +69,7 @@ interface RegenerateLogoError {
 - **Runtime**: Deno (Supabase Edge Functions)
 - **SDK**: `@google/genai` imported from `https://esm.sh/@google/genai`
 - **Model**: `gemini-2.5-flash-image`
-- **Config**: `responseModalities: ["IMAGE"]` in generation config
+- **Config**: `responseModalities: ["IMAGE", "TEXT"]` in generation config (TEXT included so Gemini can return commentary alongside the image)
 - **Auth**: Validates `Authorization: Bearer <token>` header; verifies user is authenticated (admin-only access — consistent with other edge functions)
 - **Secret**: `GEMINI_API_KEY` from `Deno.env.get()`
 - **CORS**: Standard preflight handling matching existing edge functions
