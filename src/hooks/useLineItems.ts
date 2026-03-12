@@ -10,7 +10,9 @@ export interface LineItemInsertInput {
   unit_price: number;
   cost_price?: number | null;
   unit?: string | null;
-  subtotal: number;
+  category?: string;
+  taxable?: boolean;
+  notes?: string | null;
   sort_order: number;
 }
 
