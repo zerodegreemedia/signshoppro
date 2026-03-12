@@ -93,9 +93,11 @@ export interface Proof {
   id: string;
   job_id: string;
   version: number;
+  storage_path: string;
   file_url: string;
   thumbnail_url: string | null;
   status: "pending" | "approved" | "revision_requested";
+  sent_at: string | null;
   client_notes: string | null;
   internal_notes: string | null;
   approved_at: string | null;

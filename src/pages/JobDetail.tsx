@@ -56,8 +56,12 @@ import { PhotoGrid } from "@/components/photos/PhotoGrid";
 import { PaymentLinkButton } from "@/components/payments/PaymentLinkButton";
 import { PaymentHistory } from "@/components/payments/PaymentHistory";
 import { RecordManualPayment } from "@/components/payments/RecordManualPayment";
+import { ProofUpload } from "@/components/proofs/ProofUpload";
+import { ProofViewer } from "@/components/proofs/ProofViewer";
+import { ProofApproval } from "@/components/proofs/ProofApproval";
 import { useJobPhotos } from "@/hooks/usePhotos";
 import { useJobPayments } from "@/hooks/usePayments";
+import { useJobProofs } from "@/hooks/useProofs";
 import { format } from "date-fns";
 
 // Status transition map: current status → available next statuses
@@ -186,6 +190,7 @@ export default function JobDetail() {
   const { data: photos } = useJobPhotos(id);
   const { data: lineItems } = useLineItems(id);
   const { data: payments, isLoading: paymentsLoading } = useJobPayments(id);
+  const { data: proofs, isLoading: proofsLoading } = useJobProofs(id);
   const updateJob = useUpdateJob();
   const updateStatus = useUpdateJobStatus();
 
@@ -356,7 +361,7 @@ export default function JobDetail() {
             Photos{photos?.length ? ` (${photos.length})` : ""}
           </TabsTrigger>
           <TabsTrigger value="proofs" className="flex-1 text-xs sm:text-sm">
-            Proofs
+            Proofs{proofs?.length ? ` (${proofs.length})` : ""}
           </TabsTrigger>
           <TabsTrigger value="payments" className="flex-1 text-xs sm:text-sm">
             Payments
@@ -546,16 +551,90 @@ export default function JobDetail() {
           )}
         </TabsContent>
 
-        <TabsContent value="proofs" className="mt-4">
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center text-muted-foreground">
-                <Image className="mx-auto h-10 w-10 mb-3 opacity-40" />
-                <p className="font-medium">Proofs</p>
-                <p className="text-sm mt-1">Proof management coming in Phase 8.</p>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="proofs" className="mt-4 space-y-4">
+          {/* Admin: Upload proof */}
+          <RoleGate requiredRole="admin">
+            <ProofUpload jobId={job.id} jobStatus={job.status} />
+          </RoleGate>
+
+          {/* Proof viewer for all roles */}
+          {proofs && proofs.length > 0 ? (
+            <>
+              <ProofViewer proofs={proofs} isLoading={proofsLoading} />
+
+              {/* Client: Approve / request changes on latest pending proof */}
+              <RoleGate requiredRole="client">
+                {proofs[0].status === "pending" && (
+                  <ProofApproval proof={proofs[0]} jobId={job.id} />
+                )}
+                {proofs[0].status === "revision_requested" && (
+                  <Card>
+                    <CardContent className="py-4">
+                      <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                        Changes requested — the designer is working on a new version.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+                {proofs[0].status === "approved" && (
+                  <ProofApproval proof={proofs[0]} jobId={job.id} />
+                )}
+              </RoleGate>
+
+              {/* Admin: Show status timeline for proof iterations */}
+              <RoleGate requiredRole="admin">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">
+                      Proof History
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {proofs.map((p) => (
+                        <div
+                          key={p.id}
+                          className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">v{p.version}</span>
+                            <StatusBadge
+                              status={
+                                p.status === "pending"
+                                  ? "proof_sent"
+                                  : p.status === "approved"
+                                    ? "proof_approved"
+                                    : "proof_revision_requested"
+                              }
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(p.created_at), "MMM d, h:mm a")}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </RoleGate>
+            </>
+          ) : (
+            !proofsLoading && (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="text-center text-muted-foreground">
+                    <Image className="mx-auto h-10 w-10 mb-3 opacity-40" />
+                    <p className="font-medium">No Proofs Yet</p>
+                    <p className="text-sm mt-1">
+                      {isAdmin
+                        ? "Upload a proof above to send it to the client."
+                        : "No proofs have been uploaded for this job yet."}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          )}
         </TabsContent>
 
         <TabsContent value="payments" className="mt-4 space-y-4">
