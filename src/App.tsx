@@ -9,6 +9,7 @@ import NewJob from "@/pages/NewJob";
 import JobDetail from "@/pages/JobDetail";
 import Clients from "@/pages/Clients";
 import ClientDetail from "@/pages/ClientDetail";
+import EstimateBuilder from "@/pages/EstimateBuilder";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -42,7 +43,7 @@ function App() {
         <Route path="/jobs/:id" element={<JobDetail />} />
         <Route path="/clients" element={<Clients />} />
         <Route path="/clients/:id" element={<ClientDetail />} />
-        <Route path="/estimates/:jobId" element={<PlaceholderPage title="Estimate Builder" />} />
+        <Route path="/estimates/:jobId" element={<EstimateBuilder />} />
         <Route path="/estimates" element={<PlaceholderPage title="Estimates" />} />
         <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
         <Route path="/ai/logo" element={<PlaceholderPage title="AI Logo Regeneration" />} />
