@@ -4,6 +4,11 @@ import { AppShell } from "@/components/layout/AppShell";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import Dashboard from "@/pages/Dashboard";
+import Jobs from "@/pages/Jobs";
+import NewJob from "@/pages/NewJob";
+import JobDetail from "@/pages/JobDetail";
+import Clients from "@/pages/Clients";
+import ClientDetail from "@/pages/ClientDetail";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -32,11 +37,11 @@ function App() {
         }
       >
         <Route path="/" element={<Dashboard />} />
-        <Route path="/jobs" element={<PlaceholderPage title="Jobs" />} />
-        <Route path="/jobs/new" element={<PlaceholderPage title="New Job" />} />
-        <Route path="/jobs/:id" element={<PlaceholderPage title="Job Detail" />} />
-        <Route path="/clients" element={<PlaceholderPage title="Clients" />} />
-        <Route path="/clients/:id" element={<PlaceholderPage title="Client Detail" />} />
+        <Route path="/jobs" element={<Jobs />} />
+        <Route path="/jobs/new" element={<NewJob />} />
+        <Route path="/jobs/:id" element={<JobDetail />} />
+        <Route path="/clients" element={<Clients />} />
+        <Route path="/clients/:id" element={<ClientDetail />} />
         <Route path="/estimates/:jobId" element={<PlaceholderPage title="Estimate Builder" />} />
         <Route path="/estimates" element={<PlaceholderPage title="Estimates" />} />
         <Route path="/settings" element={<PlaceholderPage title="Settings" />} />

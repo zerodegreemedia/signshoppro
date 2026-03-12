@@ -8,68 +8,79 @@ import {
   Camera,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useJobStats, useJobs } from "@/hooks/useJobs";
+import { JobCard } from "@/components/jobs/JobCard";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-const adminCards = [
-  {
-    title: "Active Jobs",
-    value: "12",
-    description: "3 due this week",
-    icon: Briefcase,
-    iconColor: "text-brand",
-    iconBg: "bg-brand/10",
-  },
-  {
-    title: "Pending Estimates",
-    value: "5",
-    description: "2 sent today",
-    icon: FileText,
-    iconColor: "text-warning",
-    iconBg: "bg-warning/10",
-  },
-  {
-    title: "Awaiting Approval",
-    value: "3",
-    description: "1 proof, 2 estimates",
-    icon: Clock,
-    iconColor: "text-danger",
-    iconBg: "bg-danger/10",
-  },
-  {
-    title: "Revenue This Month",
-    value: "$24,500",
-    description: "+12% from last month",
-    icon: DollarSign,
-    iconColor: "text-success",
-    iconBg: "bg-success/10",
-  },
-];
-
-const clientCards = [
-  {
-    title: "My Active Jobs",
-    value: "2",
-    description: "1 in production",
-    icon: Briefcase,
-    iconColor: "text-brand",
-    iconBg: "bg-brand/10",
-  },
-  {
-    title: "Awaiting My Approval",
-    value: "1",
-    description: "1 proof to review",
-    icon: Clock,
-    iconColor: "text-warning",
-    iconBg: "bg-warning/10",
-  },
-];
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
   const { isAdmin, profile } = useAuth();
   const navigate = useNavigate();
+  const { data: stats, isLoading: statsLoading } = useJobStats();
+  const { data: recentJobs, isLoading: jobsLoading } = useJobs();
+
+  const adminCards = [
+    {
+      title: "Active Jobs",
+      value: stats?.activeJobs ?? 0,
+      description: "Currently in progress",
+      icon: Briefcase,
+      iconColor: "text-brand",
+      iconBg: "bg-brand/10",
+    },
+    {
+      title: "Pending Estimates",
+      value: stats?.pendingEstimates ?? 0,
+      description: "Drafts & sent",
+      icon: FileText,
+      iconColor: "text-warning",
+      iconBg: "bg-warning/10",
+    },
+    {
+      title: "Awaiting Approval",
+      value: stats?.awaitingApproval ?? 0,
+      description: "Proofs & estimates",
+      icon: Clock,
+      iconColor: "text-danger",
+      iconBg: "bg-danger/10",
+    },
+    {
+      title: "Revenue",
+      value: (stats?.totalRevenue ?? 0).toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }),
+      description: "Completed & paid jobs",
+      icon: DollarSign,
+      iconColor: "text-success",
+      iconBg: "bg-success/10",
+    },
+  ];
+
+  const clientCards = [
+    {
+      title: "My Active Jobs",
+      value: stats?.activeJobs ?? 0,
+      description: "Currently in progress",
+      icon: Briefcase,
+      iconColor: "text-brand",
+      iconBg: "bg-brand/10",
+    },
+    {
+      title: "Awaiting My Approval",
+      value: stats?.awaitingApproval ?? 0,
+      description: "Proofs & estimates",
+      icon: Clock,
+      iconColor: "text-warning",
+      iconBg: "bg-warning/10",
+    },
+  ];
+
   const cards = isAdmin ? adminCards : clientCards;
+  const displayJobs = recentJobs?.slice(0, 5) ?? [];
 
   return (
     <div className="space-y-6">
@@ -98,7 +109,11 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
+              {statsLoading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <div className="text-2xl font-bold">{card.value}</div>
+              )}
               <p className="text-xs text-muted-foreground mt-1">
                 {card.description}
               </p>
@@ -115,37 +130,64 @@ export default function Dashboard() {
         </Button>
         <Button
           variant="outline"
-          onClick={() => navigate("/jobs/new")}
+          onClick={() => navigate("/clients")}
           className="gap-2"
         >
           <Camera className="h-4 w-4" />
-          Take Photo
+          View Clients
         </Button>
       </div>
 
-      {/* Recent jobs placeholder */}
+      {/* Recent jobs */}
       <div>
         <h3 className="text-lg font-semibold mb-3">Recent Jobs</h3>
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center text-muted-foreground">
-              <Briefcase className="mx-auto h-10 w-10 mb-3 opacity-40" />
-              <p className="font-medium">No jobs yet</p>
-              <p className="text-sm mt-1">
-                Create your first job to get started.
-              </p>
+        {jobsLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <Skeleton className="h-16 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : displayJobs.length > 0 ? (
+          <div className="space-y-3">
+            {displayJobs.map((job, i) => (
+              <JobCard key={job.id} job={job} index={i} />
+            ))}
+            {(recentJobs?.length ?? 0) > 5 && (
               <Button
                 variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => navigate("/jobs/new")}
+                className="w-full"
+                onClick={() => navigate("/jobs")}
               >
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Create Job
+                View All Jobs
               </Button>
-            </div>
-          </CardContent>
-        </Card>
+            )}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-8">
+              <div className="text-center text-muted-foreground">
+                <Briefcase className="mx-auto h-10 w-10 mb-3 opacity-40" />
+                <p className="font-medium">No jobs yet</p>
+                <p className="text-sm mt-1">
+                  Create your first job to get started.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={() => navigate("/jobs/new")}
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Create Job
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Admin-only revenue section */}
