@@ -37,6 +37,7 @@ export interface Job {
   priority: string;
   estimated_total: number | null;
   cost_total: number | null;
+  tax_rate: number | null;
   deposit_amount: number | null;
   deposit_paid: boolean;
   payment_status: string | null;
@@ -58,7 +59,10 @@ export interface LineItem {
   unit_price: number;
   cost_price: number | null;
   unit: string | null;
+  category: string;
   subtotal: number;
+  taxable: boolean;
+  notes: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -194,8 +198,8 @@ export interface Database {
       };
       line_items: {
         Row: LineItem;
-        Insert: Omit<LineItem, "id" | "created_at" | "updated_at">;
-        Update: Partial<Omit<LineItem, "id" | "created_at">>;
+        Insert: Omit<LineItem, "id" | "subtotal" | "created_at" | "updated_at">;
+        Update: Partial<Omit<LineItem, "id" | "subtotal" | "created_at">>;
       };
       job_vehicle_details: {
         Row: JobVehicleDetails;
