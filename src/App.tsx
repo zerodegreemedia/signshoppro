@@ -1,35 +1,37 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Routes, Route } from "react-router-dom";
 
-function App() {
-  const [count, setCount] = useState(0)
-
+function PlaceholderPage({ title }: { title: string }) {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="flex min-h-screen items-center justify-center">
+      <h1 className="text-2xl font-bold">{title}</h1>
+    </div>
+  );
 }
 
-export default App
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<PlaceholderPage title="Dashboard" />} />
+      <Route path="/login" element={<PlaceholderPage title="Login" />} />
+      <Route path="/jobs" element={<PlaceholderPage title="Jobs" />} />
+      <Route path="/jobs/new" element={<PlaceholderPage title="New Job" />} />
+      <Route path="/jobs/:id" element={<PlaceholderPage title="Job Detail" />} />
+      <Route path="/clients" element={<PlaceholderPage title="Clients" />} />
+      <Route
+        path="/clients/:id"
+        element={<PlaceholderPage title="Client Detail" />}
+      />
+      <Route
+        path="/estimates/:jobId"
+        element={<PlaceholderPage title="Estimate Builder" />}
+      />
+      <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
+      <Route
+        path="/ai/logo"
+        element={<PlaceholderPage title="AI Logo Regeneration" />}
+      />
+    </Routes>
+  );
+}
+
+export default App;
