@@ -1,4 +1,7 @@
 import { Routes, Route } from "react-router-dom";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -11,24 +14,82 @@ function PlaceholderPage({ title }: { title: string }) {
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<PlaceholderPage title="Dashboard" />} />
-      <Route path="/login" element={<PlaceholderPage title="Login" />} />
-      <Route path="/jobs" element={<PlaceholderPage title="Jobs" />} />
-      <Route path="/jobs/new" element={<PlaceholderPage title="New Job" />} />
-      <Route path="/jobs/:id" element={<PlaceholderPage title="Job Detail" />} />
-      <Route path="/clients" element={<PlaceholderPage title="Clients" />} />
+      {/* Public routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+
+      {/* Protected routes */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <PlaceholderPage title="Dashboard" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/jobs"
+        element={
+          <ProtectedRoute>
+            <PlaceholderPage title="Jobs" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/jobs/new"
+        element={
+          <ProtectedRoute>
+            <PlaceholderPage title="New Job" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/jobs/:id"
+        element={
+          <ProtectedRoute>
+            <PlaceholderPage title="Job Detail" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/clients"
+        element={
+          <ProtectedRoute>
+            <PlaceholderPage title="Clients" />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/clients/:id"
-        element={<PlaceholderPage title="Client Detail" />}
+        element={
+          <ProtectedRoute>
+            <PlaceholderPage title="Client Detail" />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/estimates/:jobId"
-        element={<PlaceholderPage title="Estimate Builder" />}
+        element={
+          <ProtectedRoute>
+            <PlaceholderPage title="Estimate Builder" />
+          </ProtectedRoute>
+        }
       />
-      <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <PlaceholderPage title="Settings" />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/ai/logo"
-        element={<PlaceholderPage title="AI Logo Regeneration" />}
+        element={
+          <ProtectedRoute>
+            <PlaceholderPage title="AI Logo Regeneration" />
+          </ProtectedRoute>
+        }
       />
     </Routes>
   );
