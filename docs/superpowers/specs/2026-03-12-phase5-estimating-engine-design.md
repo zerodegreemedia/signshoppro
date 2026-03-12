@@ -46,10 +46,12 @@ interface VehicleWrapResult {
   materialSell: number;          // materialSqft × sellPerSqft × complexityFactor
   designFee: number;
   installationFee: number;       // materialSell × installationRate
-  totalCost: number;             // materialCost
+  totalCost: number;             // materialCost + designCost + installationCost
   totalSell: number;             // materialSell + designFee + installationFee
   margin: number;                // totalSell - totalCost
   marginPercent: number;         // (margin / totalSell) × 100
+  designCost: number;            // typically 0 (internal labor, not tracked per-job)
+  installationCost: number;      // estimated at installationFee × 0.5
 }
 
 interface QuantityBreak {
@@ -100,7 +102,9 @@ materialSqft = baseSquareFeet × coverageMultiplier × (1 + wasteFactor)
 materialCost = materialSqft × materialCostPerSqft
 materialSell = materialSqft × materialSellPerSqft × complexityFactor
 installationFee = materialSell × installationRate
-totalCost = materialCost
+designCost = 0  (internal labor, not a direct cost)
+installationCost = installationFee × 0.5  (estimated labor cost of installation)
+totalCost = materialCost + designCost + installationCost
 totalSell = materialSell + designFee + installationFee
 margin = totalSell - totalCost
 marginPercent = (margin / totalSell) × 100
@@ -108,7 +112,7 @@ marginPercent = (margin / totalSell) × 100
 
 **`calculateQuantityBreakPrice(quantity: number, breaks: QuantityBreak[]): QuantityBreakResult`**
 
-Sort breaks by min_qty descending, find first where min_qty <= quantity. If no tier matches, use the lowest tier.
+The DB stores quantity_breaks as `Record<string, number>` (e.g. `{"250": 0.08, "500": 0.05}`). The caller must transform this to `QuantityBreak[]` before calling: `Object.entries(breaks).map(([k, v]) => ({ min_qty: Number(k), price_per_unit: v }))`. Sort breaks by min_qty descending, find first where min_qty <= quantity. If no tier matches, use the lowest tier.
 
 **`calculateBannerPrice(widthFt: number, heightFt: number, ratePerSqft = 8): BannerResult`**
 
@@ -125,8 +129,8 @@ taxableSubtotal = sum of taxable lineItem.subtotal
 taxAmount = taxableSubtotal × (taxRate / 100)
 grandTotal = subtotal + taxAmount
 totalCost = sum of (lineItem.cost_price × lineItem.quantity) for items with cost_price
-totalMargin = grandTotal - totalCost
-marginPercent = totalCost > 0 ? ((totalMargin / grandTotal) × 100) : 0
+totalMargin = subtotal - totalCost  (margin excludes tax — tax is pass-through, not profit)
+marginPercent = subtotal > 0 ? ((totalMargin / subtotal) × 100) : 0
 ```
 
 ### Coverage multiplier constant
@@ -155,7 +159,7 @@ Card-based list. Each card:
 └──────────────────────────────────┘
 ```
 
-- `≡` = drag handle for reordering (updates sort_order)
+- `≡` = drag handle for reordering (deferred — Phase 5 uses manual sort_order via up/down arrows on each card; full drag-and-drop with @dnd-kit deferred to a future polish pass)
 - Tap card → Sheet slides up with edit form
 - Category badge (material/labor/design/installation/other)
 
@@ -187,7 +191,7 @@ Cost:         $1,050.00
 Margin:       $1,602.13 (60.4%)
 ```
 
-Tax rate comes from the job's `tax_rate` field (default 8.25%).
+Tax rate comes from the job's `tax_rate` field. The DB default is 0, but the UI defaults to 8.25% when displaying/editing if the stored value is 0. This lets users override per-job.
 
 ### Props
 
@@ -242,7 +246,7 @@ Total:                        $5,330.00
 ### Banner Calculator Dialog
 
 Fields: Width (ft), Height (ft). Auto-shows: `sqft × $8.00 = total`.
-Creates 1 line item: `{category: 'material', description: 'Banner [W]ft × [H]ft', quantity: sqft, unit: 'sqft', unit_price: 8.00, cost_price: 0.75}`.
+Creates 1 line item: `{category: 'material', description: 'Banner [W]ft × [H]ft', quantity: sqft, unit: 'sqft', unit_price: 8.00, cost_price: costFromMaterialsTable}`. Cost price sourced from materials table (banner category) rather than hardcoded.
 
 ### Business Cards / Door Hangers Dialog
 
@@ -324,10 +328,10 @@ Wire these into the stat cards. Revenue card is admin-only via RoleGate.
 
 ## Dependencies
 
-### Existing (no changes needed)
+### Existing (minor fixes needed)
 - `useLineItems`, `useCreateLineItem`, `useUpdateLineItem`, `useDeleteLineItem`, `useBulkCreateLineItems` — all in `src/hooks/useLineItems.ts`
 - `useJob` — in `src/hooks/useJobs.ts`
-- `useJobStats` — in `src/hooks/useJobs.ts`
+- `useJobStats` — in `src/hooks/useJobs.ts` (uses estimated_total sum for revenue, not payments — acceptable for Phase 5)
 - `RoleGate` — in `src/components/auth/RoleGate.tsx`
 - Database schema with line_items, pricing_presets, materials, vehicle_presets tables
 - Seed data for presets and materials
@@ -340,9 +344,11 @@ Wire these into the stat cards. Revenue card is admin-only via RoleGate.
 5. `src/pages/EstimateBuilder.tsx` — full estimate page
 
 ### Files to modify
-1. `src/pages/JobDetail.tsx` — fill Line Items tab placeholder
-2. `src/pages/Dashboard.tsx` — wire real stats
-3. `src/App.tsx` — add /estimates/:jobId route
+1. `src/types/database.ts` — add missing fields to `LineItem` (category, taxable, notes) and `Job` (tax_rate)
+2. `src/hooks/useLineItems.ts` — remove `subtotal` from `LineItemInsertInput` (it's a GENERATED ALWAYS column in Postgres, cannot be inserted)
+3. `src/pages/JobDetail.tsx` — fill Line Items tab placeholder
+4. `src/pages/Dashboard.tsx` — wire real stats
+5. `src/App.tsx` — add /estimates/:jobId route
 
 ### shadcn/ui components needed
 Check which are already installed, install missing:
@@ -363,6 +369,12 @@ Check which are already installed, install missing:
 - **Tax rate missing on job**: Default to 8.25%
 - **Vehicle presets/materials not loaded**: Show skeleton, disable calculator until loaded
 - **Offline**: Line item edits queue via existing offline infrastructure (Phase 9 detail, but mutations should work through TanStack Query's standard retry)
+
+## Scope Notes
+
+- **Storefront signs/vinyl calculator**: Not included in Phase 5 QuickAddPresets. Storefront pricing uses sqft of vinyl (same formula as banners but different rate). Users can use "Custom Item" for now. A dedicated calculator can be added in a follow-up.
+- **All form dialogs and edit sheets**: Use react-hook-form + zod validation per CLAUDE.md coding rules.
+- **Revenue stat on dashboard**: Uses `useJobStats` as-is (sums estimated_total for paid/completed jobs). Monthly payment-based revenue tracking deferred to Phase 7 (Stripe integration).
 
 ## Security
 
