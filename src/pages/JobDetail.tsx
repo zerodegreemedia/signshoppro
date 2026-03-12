@@ -13,7 +13,7 @@ import {
   Car,
   Calendar,
   DollarSign,
-  Camera,
+
   CreditCard,
   Image,
   Loader2,
@@ -53,6 +53,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { JOB_TYPES, PRIORITY_LEVELS, VEHICLE_TYPES } from "@/lib/constants";
+import { PhotoCapture } from "@/components/photos/PhotoCapture";
+import { PhotoGrid } from "@/components/photos/PhotoGrid";
+import { useJobPhotos } from "@/hooks/usePhotos";
 import { format } from "date-fns";
 
 // Status transition map: current status → available next statuses
@@ -97,8 +100,10 @@ export default function JobDetail() {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
+  const [photoCaptureOpen, setPhotoCaptureOpen] = useState(false);
 
   const { data: job, isLoading } = useJob(id);
+  const { data: photos } = useJobPhotos(id);
   const { data: lineItems } = useLineItems(id);
   const updateJob = useUpdateJob();
   const updateStatus = useUpdateJobStatus();
@@ -267,7 +272,7 @@ export default function JobDetail() {
             Line Items
           </TabsTrigger>
           <TabsTrigger value="photos" className="flex-1 text-xs sm:text-sm">
-            Photos
+            Photos{photos?.length ? ` (${photos.length})` : ""}
           </TabsTrigger>
           <TabsTrigger value="proofs" className="flex-1 text-xs sm:text-sm">
             Proofs
@@ -443,16 +448,21 @@ export default function JobDetail() {
           />
         </TabsContent>
 
-        <TabsContent value="photos" className="mt-4">
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center text-muted-foreground">
-                <Camera className="mx-auto h-10 w-10 mb-3 opacity-40" />
-                <p className="font-medium">Photos</p>
-                <p className="text-sm mt-1">Photo capture coming in Phase 6.</p>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="photos" className="mt-4 space-y-4">
+          {job && (
+            <>
+              <PhotoCapture
+                jobId={job.id}
+                clientId={job.client_id}
+                open={photoCaptureOpen}
+                onOpenChange={setPhotoCaptureOpen}
+              />
+              <PhotoGrid
+                jobId={job.id}
+                onAddPhoto={() => setPhotoCaptureOpen(true)}
+              />
+            </>
+          )}
         </TabsContent>
 
         <TabsContent value="proofs" className="mt-4">

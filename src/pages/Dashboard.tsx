@@ -5,7 +5,7 @@ import {
   Clock,
   DollarSign,
   PlusCircle,
-  Camera,
+  Users,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useJobStats, useJobs } from "@/hooks/useJobs";
@@ -14,6 +14,7 @@ import { RoleGate } from "@/components/auth/RoleGate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QuickPhotoButton } from "@/components/photos/QuickPhotoButton";
 
 export default function Dashboard() {
   const { isAdmin, profile } = useAuth();
@@ -133,9 +134,10 @@ export default function Dashboard() {
           onClick={() => navigate("/clients")}
           className="gap-2"
         >
-          <Camera className="h-4 w-4" />
+          <Users className="h-4 w-4" />
           View Clients
         </Button>
+        <QuickPhotoButton />
       </div>
 
       {/* Recent jobs */}

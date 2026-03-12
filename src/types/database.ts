@@ -105,15 +105,17 @@ export interface Proof {
 export interface JobPhoto {
   id: string;
   job_id: string;
-  photo_type: string;
+  uploaded_by: string;
+  storage_path: string;
   file_url: string;
   thumbnail_url: string | null;
+  photo_type: "before" | "progress" | "after" | "measurement" | "reference" | "site_survey";
   caption: string | null;
+  notes: string | null;
   measurements: Record<string, string> | null;
   gps_latitude: number | null;
   gps_longitude: number | null;
   taken_at: string | null;
-  uploaded_by: string;
   created_at: string;
 }
 
