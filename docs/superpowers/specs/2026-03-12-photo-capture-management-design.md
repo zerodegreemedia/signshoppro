@@ -8,7 +8,7 @@ Field photo capture system for SignShop Pro. Enables capturing storefront/vehicl
 
 ```
 Camera input → browser-image-compression (max 1MB, 1920px)
-             → Supabase Storage public bucket ("job-photos")
+             → Supabase Storage bucket "job-photos" (made public via migration)
              → job_photos table insert (metadata, GPS, measurements)
              → TanStack Query invalidation → UI update
 ```
@@ -23,41 +23,100 @@ Camera input → browser-image-compression (max 1MB, 1920px)
 | `src/components/photos/PhotoViewer.tsx` | Full-size view dialog with metadata + delete |
 | `src/components/photos/MeasurementOverlay.tsx` | Width x height overlay on measurement photos |
 | `src/components/photos/QuickPhotoButton.tsx` | Dashboard shortcut: job selector → capture |
-| `supabase/migrations/002_storage.sql` | Storage buckets + RLS policies |
+| `supabase/migrations/002_storage_updates.sql` | Make buckets public, add client-logos bucket, add client INSERT policy on job_photos |
 
 ## Modified Files
 
 | File | Change |
 |------|--------|
 | `src/pages/JobDetail.tsx` | Replace Photos tab placeholder with PhotoCapture + PhotoGrid |
-| `src/pages/Dashboard.tsx` | Add Quick Photo button to quick actions |
-| `src/types/database.ts` | Add `notes` field to `JobPhoto` interface |
+| `src/pages/Dashboard.tsx` | Add Quick Photo button, fix Camera icon on View Clients button |
+| `src/types/database.ts` | Add `notes` and `storage_path` fields to `JobPhoto` interface |
 
 ## Storage Architecture
 
-- **Bucket:** `job-photos` (public, no signed URLs needed)
+- **Bucket:** `job-photos` — exists in 001 migration as private, 002 migration makes it public
 - **Path pattern:** `{client_id}/{job_id}/{photo_type}/{uuid}.jpg`
 - **URL generation:** `supabase.storage.from('job-photos').getPublicUrl(path)`
-- **Additional buckets** (for future phases): `proofs` (public), `client-logos` (public)
+- **Additional bucket:** `client-logos` (public, created in 002 migration for future phases)
+- **Existing buckets:** `proofs` also made public in 002 migration
+
+## Database Migration: `002_storage_updates.sql`
+
+This migration only adds what's missing from `001_initial_schema.sql`:
+
+```sql
+-- Make existing buckets public (they were created as private in 001)
+UPDATE storage.buckets SET public = true WHERE id = 'job-photos';
+UPDATE storage.buckets SET public = true WHERE id = 'proofs';
+
+-- Create client-logos bucket (not in 001)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('client-logos', 'client-logos', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies for client-logos bucket
+CREATE POLICY "Authenticated users can read client logos"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'client-logos' AND auth.uid() IS NOT NULL);
+
+CREATE POLICY "Authenticated users can upload client logos"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'client-logos' AND auth.uid() IS NOT NULL);
+
+CREATE POLICY "Admins can delete client logos"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'client-logos' AND public.is_admin());
+
+-- Allow clients to INSERT their own job photos (001 only has SELECT for clients)
+CREATE POLICY "Clients can insert own job photos"
+  ON public.job_photos FOR INSERT
+  WITH CHECK (
+    job_id IN (
+      SELECT j.id FROM public.jobs j
+      JOIN public.clients c ON c.id = j.client_id
+      WHERE c.profile_id = auth.uid()
+    )
+  );
+```
 
 ## Hook Design: `usePhotos.ts`
 
 ### `useJobPhotos(jobId: string)`
 - Query key: `["job-photos", jobId]`
 - Fetches all photos for a job from `job_photos` table
-- Sorted by `taken_at` descending (newest first)
+- Sorted by `taken_at` descending (newest first), falling back to `created_at`
 - Returns array of `JobPhoto` with public URLs
 - Enabled only when `jobId` is truthy
 
 ### `useUploadPhoto()`
-- Mutation that accepts: `{ file: File, jobId: string, clientId: string, photoType: PhotoType, notes?: string, measurements?: { width: string, height: string }, gpsLatitude?: number, gpsLongitude?: number }`
+- Mutation input interface:
+  ```typescript
+  interface UploadPhotoInput {
+    file: File;
+    jobId: string;
+    clientId: string;
+    photoType: PhotoType;
+    notes?: string;
+    measurements?: { width: string; height: string };
+    gpsLatitude?: number;
+    gpsLongitude?: number;
+  }
+  ```
 - Steps:
   1. Compress image using `browser-image-compression` (maxSizeMB: 1, maxWidthOrHeight: 1920)
-  2. Generate UUID filename
-  3. Upload to Supabase Storage at `{clientId}/{jobId}/{photoType}/{uuid}.jpg`
-  4. Get public URL from storage
-  5. Insert record into `job_photos` table with all metadata
-  6. Invalidate `["job-photos", jobId]` query
+  2. Generate UUID filename via `crypto.randomUUID()`
+  3. Build storage path: `{clientId}/{jobId}/{photoType}/{uuid}.jpg`
+  4. Upload to Supabase Storage at that path
+  5. Get public URL via `getPublicUrl(storagePath)`
+  6. Get current user ID from Supabase auth (`supabase.auth.getUser()`)
+  7. Insert record into `job_photos` table with fields:
+     - `job_id`, `uploaded_by` (from auth), `storage_path`, `file_url` (public URL)
+     - `photo_type`, `notes`, `measurements` (as JSONB)
+     - `gps_latitude`, `gps_longitude`
+     - `taken_at`: set to `new Date().toISOString()` (capture time)
+  8. Invalidate `["job-photos", jobId]` query
+- **Partial failure:** If storage upload succeeds but DB insert fails, attempt to delete the orphaned file from storage (best-effort cleanup)
 - Success: toast "Photo uploaded"
 - Error: toast with error message
 
@@ -82,6 +141,7 @@ Camera input → browser-image-compression (max 1MB, 1920px)
   - Notes textarea (optional)
   - Measurement inputs: width and height fields with "ft" label (shown for all types, optional)
   - "Save Photo" button (full width, prominent)
+- `caption` field is intentionally omitted — `notes` serves the same purpose for field use
 - On save:
   1. Attempt GPS via `navigator.geolocation.getCurrentPosition()` — if denied or unavailable, proceed without GPS (no error shown to user)
   2. Compress image
@@ -100,6 +160,7 @@ Camera input → browser-image-compression (max 1MB, 1920px)
   - Photo type Badge overlaid in top-right corner
   - Aspect ratio: square crop via `object-cover`
   - Tap opens PhotoViewer dialog
+- **Photo count:** Derived from `useJobPhotos` data length (query is shared via TanStack Query cache when Photos tab is active; count shown on tab trigger)
 - **Empty state:** Camera icon + "No photos yet — capture your first site photo" + "Add Photo" button
 - **Loading state:** Skeleton grid (6 skeleton cards)
 - When filtered and no results: "No {type} photos yet"
@@ -113,7 +174,7 @@ Camera input → browser-image-compression (max 1MB, 1920px)
   - Notes (if present)
   - Measurements: "12ft x 8ft" (if present)
   - GPS coordinates (if present, formatted to 6 decimal places)
-  - Date taken (formatted with date-fns or Intl)
+  - Date taken (formatted with `Intl.DateTimeFormat`)
 - Delete button: wrapped in `<RoleGate requiredRole="admin">`, red variant
   - Confirmation via AlertDialog: "Delete this photo? This cannot be undone."
   - On confirm: calls `useDeletePhoto`, closes dialog
@@ -133,24 +194,9 @@ Camera input → browser-image-compression (max 1MB, 1920px)
 - On tap: opens a Sheet with job selector
   - Uses Command/Combobox component for searchable job list
   - Shows job title + client name in results
-  - Fetches from existing `useJobs()` hook
+  - Reuses existing `useJobs()` query cache from Dashboard (TanStack Query deduplication)
 - After selecting a job: opens PhotoCapture Sheet with the selected job context
 - Provides `jobId` and `clientId` to PhotoCapture
-
-## Database Migration: `002_storage.sql`
-
-### Buckets
-```sql
-INSERT INTO storage.buckets (id, name, public) VALUES ('job-photos', 'job-photos', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('proofs', 'proofs', true);
-INSERT INTO storage.buckets (id, name, public) VALUES ('client-logos', 'client-logos', true);
-```
-
-### Storage RLS Policies
-- **Read (all buckets):** Any authenticated user can read (SELECT) objects
-- **Insert (job-photos):** Any authenticated user can upload (INSERT) objects
-- **Delete (job-photos):** Only admins can delete objects (check `raw_user_meta_data->>'role' = 'admin'`)
-- **Update (job-photos):** Only admins can update objects
 
 ## JobDetail Integration
 
@@ -161,13 +207,22 @@ Replace the Photos tab placeholder (lines ~446-456) with:
 
 ## Dashboard Integration
 
-Add to quick actions section (after existing buttons):
-- QuickPhotoButton component
-- Styled as outline variant to match existing button pattern
+- Add QuickPhotoButton to quick actions section (after existing buttons)
+- Fix existing "View Clients" button icon: replace Camera with Users icon (the Camera icon was a mistake)
 
 ## Type Updates
 
-Add `notes` field to `JobPhoto` interface in `database.ts` (it exists in the DB schema but is missing from the TypeScript type).
+Update `JobPhoto` interface in `database.ts`:
+- Add `notes: string | null` (exists in DB, missing from interface)
+- Add `storage_path: string` (exists in DB, missing from interface)
+- Change `photo_type: string` → `photo_type: PhotoType` (use the union type from constants.ts)
+
+## Offline Behavior
+
+Full offline queue integration (IndexedDB blob storage, FIFO upload on reconnect) is deferred to a future phase. For now:
+- If offline when saving, the Supabase upload will fail and a toast error will show
+- The user can retry when back online
+- No data is lost since the form stays open on error
 
 ## Dependencies
 
@@ -175,7 +230,7 @@ All required packages are already installed:
 - `browser-image-compression` ^2.0.2
 - `@supabase/supabase-js` (storage API)
 - shadcn/ui components (Sheet, Dialog, AlertDialog, Select, Badge, Tabs, Command, Skeleton)
-- `lucide-react` (Camera, Trash2, MapPin, Ruler, Calendar icons)
+- `lucide-react` (Camera, Trash2, MapPin, Ruler, Calendar, Users icons)
 
 ## Verification Criteria
 
