@@ -70,7 +70,7 @@ interface RegenerateLogoError {
 - **SDK**: `@google/genai` imported from `https://esm.sh/@google/genai`
 - **Model**: `gemini-2.5-flash-image`
 - **Config**: `responseModalities: ["IMAGE"]` in generation config
-- **Auth**: Validates `Authorization: Bearer <anon_key>` header (standard Supabase pattern)
+- **Auth**: Validates `Authorization: Bearer <token>` header; verifies user is authenticated (admin-only access — consistent with other edge functions)
 - **Secret**: `GEMINI_API_KEY` from `Deno.env.get()`
 - **CORS**: Standard preflight handling matching existing edge functions
 
@@ -94,34 +94,55 @@ When a custom prompt is provided, it is appended: `{defaultPrompt}\n\nAdditional
 
 ## Hook: `useLogoRegeneration.ts`
 
+Uses TanStack Query `useMutation` for all server interactions (per Coding Rule #3).
+
 ### State
 
+Local `useState` for image data (not server-cached):
 ```typescript
-interface LogoState {
-  originalImage: { base64: string; mimeType: string } | null;
-  regeneratedImage: { base64: string; mimeType: string } | null;
-  isProcessing: boolean;
-  error: string | null;
-}
+originalImage: { base64: string; mimeType: string } | null
+regeneratedImage: { base64: string; mimeType: string } | null
 ```
 
-### Methods
+Mutation states (`isPending`, `error`) come from TanStack Query mutations.
 
-- **`regenerateLogo(file: File)`**: Validates file type and size (<10MB), converts to base64 (strips data URI prefix), calls edge function, stores result.
-- **`refineLogo(instruction: string)`**: Takes the current `regeneratedImage`, sends it back to the edge function with the instruction as the prompt. Replaces `regeneratedImage` with new result.
+### Mutations
+
+- **`regenerateMutation`** (`useMutation`): Validates file type and size (<10MB), converts to base64 (strips data URI prefix), calls edge function. On success, stores result in `regeneratedImage` state.
+- **`refineMutation`** (`useMutation`): Takes the current `regeneratedImage`, sends it back to the edge function with the instruction as the prompt. On success, replaces `regeneratedImage` with new result.
+- **`saveMutation`** (`useMutation`): Fetches the job to get `client_id`. Converts base64 to Blob. Uploads to `client-logos` bucket at path `{client_id}/{job_id}/{uuid}.png`. Shows success toast.
+
+### Helper Methods
+
 - **`downloadImage()`**: Converts `regeneratedImage.base64` to a Blob, creates an object URL, programmatically clicks an `<a>` element to trigger download. Filename: `logo-regenerated-{timestamp}.png`.
-- **`saveToJob(jobId: string)`**: Fetches the job to get `client_id`. Converts base64 to Blob. Uploads to `client-logos` bucket at path `{client_id}/{uuid}.png`. Shows success toast.
-- **`reset()`**: Clears all state back to initial values.
+- **`reset()`**: Clears all state back to initial values, resets mutations.
+
+### Exposed API
+
+```typescript
+{
+  originalImage, regeneratedImage,
+  regenerateLogo: (file: File) => void,
+  refineLogo: (instruction: string) => void,
+  downloadImage: () => void,
+  saveToJob: (jobId: string) => void,
+  reset: () => void,
+  isProcessing: boolean,  // regenerateMutation.isPending || refineMutation.isPending
+  isSaving: boolean,      // saveMutation.isPending
+  error: string | null,   // derived from active mutation errors
+}
+```
 
 ### File Validation
 
 - Accepted types: `image/png`, `image/jpeg`, `image/webp`, `image/gif`
 - Max size: 10MB (10 * 1024 * 1024 bytes)
+- Client-side compression: resize to max 4096px on longest side before base64 encoding (reduces payload size for the edge function)
 - Error messages: "Please upload a PNG, JPG, WEBP, or GIF image" / "File is too large. Please use an image under 10MB."
 
 ## Page: `LogoRegenerate.tsx`
 
-Replaces the current `PlaceholderPage` at route `/ai/logo`.
+Replaces the current `PlaceholderPage` at route `/ai/logo`. Wrapped in `RoleGate` for admin-only access.
 
 ### Layout
 
@@ -188,10 +209,11 @@ Replaces the current `PlaceholderPage` at route `/ai/logo`.
 
 ### Save to Job
 
-- Dropdown (Select component) populated from `useJobs()` hook
+- Searchable combobox (shadcn `Command` + `Popover`) populated from `useJobs()` filtered to active jobs only (exclude completed/archived/cancelled)
 - Shows job title + client name for each option
-- If page loaded with `?jobId=xxx` query param, pre-selects that job
-- On save: uploads to storage, shows success toast with the storage path
+- If page loaded with `?jobId=xxx` query param, pre-selects that job and shows it as default
+- On save: uploads to storage, shows success toast
+- Empty state: "No active jobs found. Create a job first to save logos."
 
 ### Refinement Flow
 
@@ -219,7 +241,7 @@ Placed in the overview section near existing action buttons.
 ## Storage
 
 - **Bucket**: `client-logos` (already exists with public access + RLS)
-- **Path**: `{client_id}/{uuid}.png`
+- **Path**: `{client_id}/{job_id}/{uuid}.png`
 - **No DB table** — logos are stored as files only, discoverable by listing the bucket path
 
 ## Edge Cases
