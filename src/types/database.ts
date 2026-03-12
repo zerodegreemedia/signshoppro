@@ -42,6 +42,8 @@ export interface Job {
   deposit_amount: number | null;
   deposit_paid: boolean;
   payment_status: string | null;
+  stripe_payment_id: string | null;
+  stripe_payment_link: string | null;
   due_date: string | null;
   install_date: string | null;
   install_address: string | null;
@@ -163,6 +165,7 @@ export interface Payment {
   client_id: string;
   amount: number;
   payment_type: "deposit" | "progress" | "final" | "refund";
+  payment_method: string | null;
   status: "pending" | "completed" | "failed" | "refunded";
   stripe_payment_id: string | null;
   stripe_payment_link: string | null;

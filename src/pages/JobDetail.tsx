@@ -13,8 +13,6 @@ import {
   Car,
   Calendar,
   DollarSign,
-
-  CreditCard,
   Image,
   Loader2,
 } from "lucide-react";
@@ -55,7 +53,11 @@ import {
 import { JOB_TYPES, PRIORITY_LEVELS, VEHICLE_TYPES } from "@/lib/constants";
 import { PhotoCapture } from "@/components/photos/PhotoCapture";
 import { PhotoGrid } from "@/components/photos/PhotoGrid";
+import { PaymentLinkButton } from "@/components/payments/PaymentLinkButton";
+import { PaymentHistory } from "@/components/payments/PaymentHistory";
+import { RecordManualPayment } from "@/components/payments/RecordManualPayment";
 import { useJobPhotos } from "@/hooks/usePhotos";
+import { useJobPayments } from "@/hooks/usePayments";
 import { format } from "date-fns";
 
 // Status transition map: current status → available next statuses
@@ -95,6 +97,84 @@ const editSchema = z.object({
 
 type EditFormValues = z.infer<typeof editSchema>;
 
+function formatUSD(amount: number) {
+  return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
+function PaymentSummaryCard({
+  estimatedTotal,
+  depositAmount,
+  payments,
+  paymentStatus,
+}: {
+  estimatedTotal: number | null;
+  depositAmount: number | null;
+  payments: import("@/types/database").Payment[] | undefined;
+  paymentStatus: string | null;
+}) {
+  const total = estimatedTotal ?? 0;
+  const deposit = depositAmount ?? 0;
+  const amountPaid = (payments ?? [])
+    .filter((p) => p.status === "completed" && p.payment_type !== "refund")
+    .reduce((sum, p) => sum + p.amount, 0);
+  const balance = total - amountPaid;
+
+  const statusColor =
+    paymentStatus === "paid"
+      ? "text-green-600"
+      : amountPaid > 0
+        ? "text-amber-600"
+        : balance > 0
+          ? "text-red-600"
+          : "text-muted-foreground";
+
+  const statusLabel =
+    paymentStatus === "paid"
+      ? "Paid"
+      : amountPaid > 0
+        ? "Partially Paid"
+        : total > 0
+          ? "Unpaid"
+          : "No Estimate";
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">
+            Payment Summary
+          </CardTitle>
+          <span className={`text-sm font-semibold ${statusColor}`}>
+            {statusLabel}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Total Estimate</span>
+          <span className="font-medium">{formatUSD(total)}</span>
+        </div>
+        {deposit > 0 && (
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Deposit Required</span>
+            <span className="font-medium">{formatUSD(deposit)}</span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Amount Paid</span>
+          <span className="font-medium text-green-600">{formatUSD(amountPaid)}</span>
+        </div>
+        <div className="flex justify-between border-t pt-2">
+          <span className="font-medium">Balance Due</span>
+          <span className={`font-bold ${balance > 0 ? "text-red-600" : "text-green-600"}`}>
+            {formatUSD(Math.max(balance, 0))}
+          </span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -105,6 +185,7 @@ export default function JobDetail() {
   const { data: job, isLoading } = useJob(id);
   const { data: photos } = useJobPhotos(id);
   const { data: lineItems } = useLineItems(id);
+  const { data: payments, isLoading: paymentsLoading } = useJobPayments(id);
   const updateJob = useUpdateJob();
   const updateStatus = useUpdateJobStatus();
 
@@ -477,16 +558,28 @@ export default function JobDetail() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="payments" className="mt-4">
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center text-muted-foreground">
-                <CreditCard className="mx-auto h-10 w-10 mb-3 opacity-40" />
-                <p className="font-medium">Payments</p>
-                <p className="text-sm mt-1">Payment tracking coming in Phase 7.</p>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="payments" className="mt-4 space-y-4">
+          {/* Payment Summary */}
+          <RoleGate requiredRole="admin">
+            <PaymentSummaryCard
+              estimatedTotal={job.estimated_total}
+              depositAmount={job.deposit_amount}
+              payments={payments}
+              paymentStatus={job.payment_status}
+            />
+          </RoleGate>
+
+          {/* Generate / Show Payment Link */}
+          <PaymentLinkButton
+            jobId={job.id}
+            existingLink={job.stripe_payment_link ?? null}
+          />
+
+          {/* Record Manual Payment */}
+          <RecordManualPayment jobId={job.id} clientId={job.client_id} />
+
+          {/* Payment History */}
+          <PaymentHistory payments={payments} isLoading={paymentsLoading} />
         </TabsContent>
       </Tabs>
 
