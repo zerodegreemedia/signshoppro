@@ -13,7 +13,6 @@ import {
   Car,
   Calendar,
   DollarSign,
-  FileText,
   Camera,
   CreditCard,
   Image,
@@ -21,6 +20,9 @@ import {
 } from "lucide-react";
 import { useJob, useUpdateJob, useUpdateJobStatus } from "@/hooks/useJobs";
 import { useAuth } from "@/hooks/useAuth";
+import { LineItemEditor } from "@/components/estimates/LineItemEditor";
+import QuickAddPresets from "@/components/estimates/QuickAddPresets";
+import { useLineItems } from "@/hooks/useLineItems";
 import { StatusBadge } from "@/components/jobs/StatusBadge";
 import { StatusTimeline } from "@/components/jobs/StatusTimeline";
 import { RoleGate } from "@/components/auth/RoleGate";
@@ -93,10 +95,11 @@ type EditFormValues = z.infer<typeof editSchema>;
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
 
   const { data: job, isLoading } = useJob(id);
+  const { data: lineItems } = useLineItems(id);
   const updateJob = useUpdateJob();
   const updateStatus = useUpdateJobStatus();
 
@@ -427,17 +430,17 @@ export default function JobDetail() {
           </Card>
         </TabsContent>
 
-        {/* Placeholder tabs */}
-        <TabsContent value="line-items" className="mt-4">
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center text-muted-foreground">
-                <FileText className="mx-auto h-10 w-10 mb-3 opacity-40" />
-                <p className="font-medium">Line Items</p>
-                <p className="text-sm mt-1">Estimate builder coming in Phase 5.</p>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Line Items Tab */}
+        <TabsContent value="line-items" className="mt-4 space-y-4">
+          <QuickAddPresets
+            jobId={job.id}
+            currentItemCount={lineItems?.length ?? 0}
+          />
+          <LineItemEditor
+            jobId={job.id}
+            taxRate={job.tax_rate ?? 0}
+            isAdmin={isAdmin}
+          />
         </TabsContent>
 
         <TabsContent value="photos" className="mt-4">
