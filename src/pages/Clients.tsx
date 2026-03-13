@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Search, Users, Phone, Mail, Briefcase } from "lucide-react";
 import { useClients, useCreateClient } from "@/hooks/useClients";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +38,10 @@ export default function Clients() {
     notes?: string;
     tax_exempt?: boolean;
   }) => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Authentication error. Please refresh and try again.");
+      return;
+    }
     createClient.mutate(
       {
         business_name: values.business_name,

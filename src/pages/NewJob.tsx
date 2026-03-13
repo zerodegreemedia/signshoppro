@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useClients, useCreateClient } from "@/hooks/useClients";
+import { toast } from "sonner";
 import { useCreateJob } from "@/hooks/useJobs";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { Button } from "@/components/ui/button";
@@ -118,7 +119,10 @@ export default function NewJob() {
     zip?: string;
     notes?: string;
   }) => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Authentication error. Please refresh and try again.");
+      return;
+    }
     createClient.mutate(
       {
         business_name: values.business_name,
@@ -143,7 +147,11 @@ export default function NewJob() {
   };
 
   const onSubmit = (values: JobFormValues) => {
-    if (!user || !selectedClient) return;
+    if (!user) {
+      toast.error("Authentication error. Please refresh and try again.");
+      return;
+    }
+    if (!selectedClient) return;
 
     const selectedVehicle = VEHICLE_TYPES.find(
       (v) => v.value === values.vehicle_type

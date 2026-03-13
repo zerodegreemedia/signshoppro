@@ -175,7 +175,7 @@ export function useUploadPhoto() {
 
 /** Returns photo blobs stored offline for a given job, for local grid display. */
 export function useOfflinePhotos(jobId: string | undefined) {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["offline-photos", jobId],
     queryFn: async () => {
       if (!jobId) return [];
@@ -201,7 +201,23 @@ export function useOfflinePhotos(jobId: string | undefined) {
     },
     enabled: !!jobId,
     refetchInterval: 5000,
+    structuralSharing: (oldData, newData) => {
+      // Revoke old blob URLs to prevent memory leaks
+      if (Array.isArray(oldData)) {
+        const newUrls = new Set(
+          (newData as typeof oldData).map((item) => item.id)
+        );
+        for (const item of oldData) {
+          if (!newUrls.has(item.id)) {
+            URL.revokeObjectURL(item.blobUrl);
+          }
+        }
+      }
+      return newData;
+    },
   });
+
+  return query;
 }
 
 export function useDeletePhoto() {

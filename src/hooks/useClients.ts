@@ -35,6 +35,10 @@ export interface ClientUpdateInput {
   profile_id?: string | null;
 }
 
+function escapeFilterValue(value: string): string {
+  return value.replace(/[%_\\,().]/g, (ch) => `\\${ch}`);
+}
+
 export function useClients(search?: string) {
   return useQuery({
     queryKey: ["clients", search],
@@ -45,8 +49,9 @@ export function useClients(search?: string) {
         .order("business_name");
 
       if (search) {
+        const safe = escapeFilterValue(search);
         query = query.or(
-          `business_name.ilike.%${search}%,contact_name.ilike.%${search}%,email.ilike.%${search}%`
+          `business_name.ilike.%${safe}%,contact_name.ilike.%${safe}%,email.ilike.%${safe}%`
         );
       }
 

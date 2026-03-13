@@ -41,8 +41,9 @@ export interface VehicleDetailsInput {
   color?: string | null;
   total_sqft: number;
   coverage_percentage: number;
+  wrap_coverage?: string | null;
   material_type?: string | null;
-  complexity?: string | null;
+  complexity_factor?: number | null;
   notes?: string | null;
 }
 
@@ -103,8 +104,9 @@ export function useJobs(filters?: JobFilters) {
       }
 
       if (filters?.search) {
+        const safe = filters.search.replace(/[%_\\,().]/g, (ch) => `\\${ch}`);
         query = query.or(
-          `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+          `title.ilike.%${safe}%,description.ilike.%${safe}%`
         );
       }
 
@@ -188,7 +190,7 @@ export function useUpdateJob() {
     mutationFn: async ({
       id,
       ...updates
-    }: { id: string } & Record<string, unknown>) => {
+    }: { id: string } & Partial<Omit<Job, "id" | "created_at">>) => {
       const { data, error } = await supabase
         .from("jobs")
         .update(updates)

@@ -80,10 +80,14 @@ export interface JobVehicleDetails {
   model: string | null;
   color: string | null;
   vin: string | null;
+  wrap_coverage: string | null;
+  vinyl_brand: string | null;
+  vinyl_type: string | null;
+  vinyl_finish: string | null;
   total_sqft: number;
+  complexity_factor: number;
   coverage_percentage: number;
   material_type: string | null;
-  complexity: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -127,12 +131,15 @@ export interface Material {
   id: string;
   name: string;
   category: string;
+  brand: string | null;
   unit: string;
   cost_per_unit: number;
   retail_per_unit: number;
   supplier: string | null;
   sku: string | null;
   in_stock: boolean;
+  in_stock_qty: number | null;
+  active: boolean;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -142,6 +149,7 @@ export interface PricingPreset {
   id: string;
   name: string;
   job_type: string;
+  category: string | null;
   description: string | null;
   base_price: number | null;
   price_per_sqft: number | null;
@@ -149,6 +157,7 @@ export interface PricingPreset {
   quantity_breaks: Record<string, number> | null;
   includes_design: boolean;
   includes_installation: boolean;
+  active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -157,7 +166,10 @@ export interface VehiclePreset {
   id: string;
   vehicle_type: string;
   label: string;
+  make: string | null;
+  model: string | null;
   default_sqft: number;
+  notes: string | null;
   created_at: string;
 }
 

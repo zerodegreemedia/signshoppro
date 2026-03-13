@@ -147,6 +147,10 @@ export function useLogoRegeneration() {
     mutationFn: async (jobId: string) => {
       if (!regeneratedImage) throw new Error("No image to save");
 
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw authError ?? new Error("Not authenticated");
+
       // Fetch job to get client_id
       const { data: job, error: jobError } = await supabase
         .from("jobs")
@@ -159,7 +163,8 @@ export function useLogoRegeneration() {
       // Convert to blob and upload
       const blob = base64ToBlob(regeneratedImage.base64, regeneratedImage.mimeType);
       const ext = regeneratedImage.mimeType.split("/")[1] || "png";
-      const filePath = `${job.client_id}/${jobId}/${crypto.randomUUID()}.${ext}`;
+      const clientId = (job as { client_id: string }).client_id;
+      const filePath = `${clientId}/${jobId}/${crypto.randomUUID()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("client-logos")
@@ -169,6 +174,26 @@ export function useLogoRegeneration() {
         });
 
       if (uploadError) throw uploadError;
+
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from("client-logos")
+        .getPublicUrl(filePath);
+
+      // Persist logo-job relationship as a job_photo record
+      const { error: insertError } = await supabase
+        .from("job_photos")
+        .insert({
+          job_id: jobId,
+          uploaded_by: user.id,
+          storage_path: filePath,
+          file_url: urlData.publicUrl,
+          photo_type: "reference" as const,
+          caption: "AI-regenerated logo",
+          taken_at: new Date().toISOString(),
+        });
+
+      if (insertError) throw insertError;
 
       return filePath;
     },
