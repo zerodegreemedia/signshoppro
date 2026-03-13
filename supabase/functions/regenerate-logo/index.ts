@@ -47,8 +47,9 @@ serve(async (req: Request) => {
     } = await supabaseAuth.auth.getUser(token);
 
     if (authError || !user) {
+      console.error("Auth error:", authError?.message ?? "No user returned");
       return new Response(
-        JSON.stringify({ error: "Invalid token" }),
+        JSON.stringify({ error: "Invalid token", detail: authError?.message }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -60,6 +61,7 @@ serve(async (req: Request) => {
       .single();
 
     if (profileError || profile?.role !== "admin") {
+      console.error("Profile/role error:", profileError?.message ?? `role=${profile?.role}`);
       return new Response(
         JSON.stringify({ error: "Admin access required" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }

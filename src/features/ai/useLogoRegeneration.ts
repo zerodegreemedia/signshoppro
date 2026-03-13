@@ -104,7 +104,19 @@ export function useLogoRegeneration() {
         body: { imageBase64: base64, mimeType: file.type },
       });
 
-      if (error) throw new Error(error.message || "Failed to process image");
+      if (error) {
+        // supabase.functions.invoke returns generic message on non-2xx;
+        // try to extract the actual error from the response context
+        let detail = error.message;
+        try {
+          const ctx = (error as { context?: Response }).context;
+          if (ctx) {
+            const body = await ctx.json();
+            detail = body?.error || body?.detail || detail;
+          }
+        } catch { /* ignore parse errors */ }
+        throw new Error(detail);
+      }
       if (data?.error) throw new Error(data.error);
 
       return { base64: data.imageBase64, mimeType: data.mimeType } as ImageData;
@@ -129,7 +141,17 @@ export function useLogoRegeneration() {
         },
       });
 
-      if (error) throw new Error(error.message || "Failed to refine image");
+      if (error) {
+        let detail = error.message;
+        try {
+          const ctx = (error as { context?: Response }).context;
+          if (ctx) {
+            const body = await ctx.json();
+            detail = body?.error || body?.detail || detail;
+          }
+        } catch { /* ignore parse errors */ }
+        throw new Error(detail);
+      }
       if (data?.error) throw new Error(data.error);
 
       return { base64: data.imageBase64, mimeType: data.mimeType } as ImageData;
