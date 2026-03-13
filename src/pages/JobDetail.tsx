@@ -231,6 +231,7 @@ export default function JobDetail() {
                   else if (node.type === "payment") setActiveSection("payments");
                   else setActiveSection("info");
                 }}
+                onOpenEstimate={() => setActiveSection("line-items")}
               />
             </CardContent>
           </Card>

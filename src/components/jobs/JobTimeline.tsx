@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils";
 import type { TimelineNode, TimelineNodeType } from "@/lib/timeline";
 import type { JobPhoto } from "@/types/database";
+import { Button } from "@/components/ui/button";
 
 const TYPE_CONFIG: Record<
   TimelineNodeType,
@@ -46,9 +47,10 @@ interface JobTimelineProps {
   nodes: TimelineNode[];
   currentStatus?: string;
   onNodeClick?: (node: TimelineNode) => void;
+  onOpenEstimate?: () => void;
 }
 
-export function JobTimeline({ nodes, currentStatus, onNodeClick }: JobTimelineProps) {
+export function JobTimeline({ nodes, currentStatus, onNodeClick, onOpenEstimate }: JobTimelineProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const toggleExpand = (id: string) => {
@@ -82,6 +84,10 @@ export function JobTimeline({ nodes, currentStatus, onNodeClick }: JobTimelinePr
             node.type === "status" && node.status === currentStatus;
           const hasExpandableContent =
             node.type === "photo" || node.type === "proof" || node.type === "payment";
+          const isEstimateStatus =
+            node.type === "status" &&
+            node.status &&
+            ["estimate_draft", "estimate_sent", "estimate_approved", "estimate_rejected"].includes(node.status);
 
           return (
             <div key={node.id} className="relative animate-fade-up">
@@ -157,6 +163,23 @@ export function JobTimeline({ nodes, currentStatus, onNodeClick }: JobTimelinePr
                     >
                       {node.actionButton.label}
                     </span>
+                  </div>
+                )}
+
+                {/* Edit Estimate button */}
+                {isEstimateStatus && onOpenEstimate && (
+                  <div className="mt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-xs h-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenEstimate();
+                      }}
+                    >
+                      Edit Estimate
+                    </Button>
                   </div>
                 )}
               </button>
