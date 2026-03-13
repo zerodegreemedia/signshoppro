@@ -83,3 +83,17 @@ export const VEHICLE_TYPES = [
 ] as const;
 
 export type VehicleType = (typeof VEHICLE_TYPES)[number]["value"];
+
+/** Wrap coverage → percentage mapping for vehicle wrap pricing */
+export const WRAP_COVERAGE_PERCENT: Record<string, number> = {
+  full: 100,
+  three_quarter: 75,
+  half: 50,
+  partial: 30,
+  spot_graphics: 15,
+  lettering: 10,
+} as const;
+
+/** T-shirt pricing upcharge constants */
+export const TSHIRT_COLOR_UPCHARGE = 1.5;
+export const TSHIRT_LOCATION_UPCHARGE = 3.0;

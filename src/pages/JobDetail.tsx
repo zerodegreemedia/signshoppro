@@ -94,7 +94,7 @@ const STATUS_TRANSITIONS: Record<string, { label: string; value: string }[]> = {
 
 const editSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  job_type: z.string(),
+  job_type: z.string().min(1, "Job type is required"),
   priority: z.string(),
   due_date: z.string(),
   description: z.string(),

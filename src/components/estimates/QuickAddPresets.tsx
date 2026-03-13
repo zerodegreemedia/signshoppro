@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { TSHIRT_COLOR_UPCHARGE, TSHIRT_LOCATION_UPCHARGE } from "@/lib/constants";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -231,6 +232,9 @@ function VehicleWrapDialog({
                 </Select>
               )}
             />
+            {form.formState.errors.vehiclePresetId && (
+              <p className="text-sm text-destructive">{form.formState.errors.vehiclePresetId.message}</p>
+            )}
           </div>
 
           {/* Coverage */}
@@ -283,6 +287,9 @@ function VehicleWrapDialog({
                 </Select>
               )}
             />
+            {form.formState.errors.materialId && (
+              <p className="text-sm text-destructive">{form.formState.errors.materialId.message}</p>
+            )}
           </div>
 
           {/* Complexity Factor */}
@@ -454,6 +461,9 @@ function BannerDialog({
                 step="0.1"
                 {...form.register("width", { valueAsNumber: true })}
               />
+              {form.formState.errors.width && (
+                <p className="text-sm text-destructive">{form.formState.errors.width.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Height (ft)</Label>
@@ -462,6 +472,9 @@ function BannerDialog({
                 step="0.1"
                 {...form.register("height", { valueAsNumber: true })}
               />
+              {form.formState.errors.height && (
+                <p className="text-sm text-destructive">{form.formState.errors.height.message}</p>
+              )}
             </div>
           </div>
 
@@ -589,6 +602,9 @@ function QuantityPresetDialog({
               type="number"
               {...form.register("quantity", { valueAsNumber: true })}
             />
+            {form.formState.errors.quantity && (
+              <p className="text-sm text-destructive">{form.formState.errors.quantity.message}</p>
+            )}
           </div>
 
           {/* Tier reference */}
@@ -697,8 +713,8 @@ function TShirtDialog({
 
     const extraColors = Math.max(0, watched.numColors - 1);
     const extraLocations = Math.max(0, watched.numLocations - 1);
-    const colorUpcharge = extraColors * 1.5;
-    const locationUpcharge = extraLocations * 3.0;
+    const colorUpcharge = extraColors * TSHIRT_COLOR_UPCHARGE;
+    const locationUpcharge = extraLocations * TSHIRT_LOCATION_UPCHARGE;
     const unitPrice = unitBase + colorUpcharge + locationUpcharge;
     const total = Math.round(unitPrice * watched.quantity * 100) / 100;
 
@@ -750,6 +766,9 @@ function TShirtDialog({
               type="number"
               {...form.register("quantity", { valueAsNumber: true })}
             />
+            {form.formState.errors.quantity && (
+              <p className="text-sm text-destructive">{form.formState.errors.quantity.message}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -761,6 +780,9 @@ function TShirtDialog({
                 max={6}
                 {...form.register("numColors", { valueAsNumber: true })}
               />
+              {form.formState.errors.numColors && (
+                <p className="text-sm text-destructive">{form.formState.errors.numColors.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Locations (1-4)</Label>
@@ -772,6 +794,9 @@ function TShirtDialog({
                   valueAsNumber: true,
                 })}
               />
+              {form.formState.errors.numLocations && (
+                <p className="text-sm text-destructive">{form.formState.errors.numLocations.message}</p>
+              )}
             </div>
           </div>
 

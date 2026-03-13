@@ -224,18 +224,18 @@ export function useDeletePhoto() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: DeletePhotoInput) => {
-      // 1. Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from("job-photos")
-        .remove([input.storagePath]);
-      if (storageError) throw storageError;
-
-      // 2. Delete from database
+      // 1. Delete from database first (authoritative record)
       const { error: dbError } = await supabase
         .from("job_photos")
         .delete()
         .eq("id", input.photoId);
       if (dbError) throw dbError;
+
+      // 2. Delete from storage (orphaned file is harmless if this fails)
+      const { error: storageError } = await supabase.storage
+        .from("job-photos")
+        .remove([input.storagePath]);
+      if (storageError) console.warn("Storage cleanup failed:", storageError.message);
 
       return { jobId: input.jobId };
     },

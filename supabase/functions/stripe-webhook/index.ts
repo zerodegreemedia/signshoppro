@@ -1,8 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const allowedOrigin = Deno.env.get("APP_URL") || "https://signshop.zerodegree.media";
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": allowedOrigin,
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
@@ -135,7 +137,7 @@ serve(async (req: Request) => {
           job_id: jobId,
           from_status: job.status,
           to_status: "paid",
-          changed_by: "00000000-0000-0000-0000-000000000000", // System user
+          changed_by: null, // System-initiated (Stripe webhook, no user session)
           notes: `Payment received via Stripe: $${amountPaid.toFixed(2)}`,
         });
       }

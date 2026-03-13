@@ -110,7 +110,7 @@ export function useJobs(filters?: JobFilters) {
         );
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.limit(50);
       if (error) throw error;
       return data as JobWithClient[];
     },
@@ -151,25 +151,32 @@ export function useCreateJob() {
 
       const createdJob = newJob as Job;
 
-      if (vehicle_details) {
-        const { error: vehicleError } = await supabase
-          .from("job_vehicle_details")
-          .insert({
-            ...vehicle_details,
-            job_id: createdJob.id,
-          });
-        if (vehicleError) throw vehicleError;
-      }
+      try {
+        if (vehicle_details) {
+          const { error: vehicleError } = await supabase
+            .from("job_vehicle_details")
+            .insert({
+              ...vehicle_details,
+              job_id: createdJob.id,
+            });
+          if (vehicleError) throw vehicleError;
+        }
 
-      const { error: historyError } = await supabase
-        .from("job_status_history")
-        .insert({
-          job_id: createdJob.id,
-          from_status: null,
-          to_status: jobData.status || "lead",
-          changed_by: jobData.created_by,
-        });
-      if (historyError) throw historyError;
+        // Manually insert initial status history record
+        const { error: historyError } = await supabase
+          .from("job_status_history")
+          .insert({
+            job_id: createdJob.id,
+            from_status: null,
+            to_status: jobData.status || "lead",
+            changed_by: jobData.created_by,
+          });
+        if (historyError) throw historyError;
+      } catch (followUpError) {
+        // Clean up the orphaned job if related inserts fail
+        await supabase.from("jobs").delete().eq("id", createdJob.id);
+        throw followUpError;
+      }
 
       return createdJob;
     },
@@ -237,6 +244,7 @@ export function useUpdateJobStatus() {
         .from("jobs")
         .update({ status: newStatus })
         .eq("id", jobId)
+        .eq("status", (currentJob as { status: string }).status)
         .select()
         .single();
       if (error) throw error;
@@ -291,24 +299,14 @@ export function useJobStats() {
   return useQuery({
     queryKey: ["job-stats"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("jobs")
-        .select("status, estimated_total");
+      const { data, error } = await supabase.rpc("get_job_stats");
       if (error) throw error;
-
-      const jobs = data as Pick<Job, "status" | "estimated_total">[];
-      const activeStatuses = STATUS_CATEGORIES.active;
-      const estimateStatuses = ["estimate_draft", "estimate_sent"];
-      const awaitingApproval = ["estimate_sent", "proof_sent"];
-
-      return {
-        activeJobs: jobs.filter((j) => activeStatuses.includes(j.status)).length,
-        pendingEstimates: jobs.filter((j) => estimateStatuses.includes(j.status)).length,
-        awaitingApproval: jobs.filter((j) => awaitingApproval.includes(j.status)).length,
-        completedJobs: jobs.filter((j) => j.status === "completed").length,
-        totalRevenue: jobs
-          .filter((j) => ["paid", "completed"].includes(j.status))
-          .reduce((sum, j) => sum + (j.estimated_total || 0), 0),
+      return data as {
+        activeJobs: number;
+        pendingEstimates: number;
+        awaitingApproval: number;
+        completedJobs: number;
+        totalRevenue: number;
       };
     },
   });

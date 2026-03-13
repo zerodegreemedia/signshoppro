@@ -443,6 +443,9 @@ export function LineItemEditor({ jobId, taxRate, isAdmin }: LineItemEditorProps)
                   min="0.01"
                   {...form.register("quantity", { valueAsNumber: true })}
                 />
+                {form.formState.errors.quantity && (
+                  <p className="text-sm text-destructive">{form.formState.errors.quantity.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Unit Price *</Label>
@@ -452,6 +455,9 @@ export function LineItemEditor({ jobId, taxRate, isAdmin }: LineItemEditorProps)
                   min="0"
                   {...form.register("unit_price", { valueAsNumber: true })}
                 />
+                {form.formState.errors.unit_price && (
+                  <p className="text-sm text-destructive">{form.formState.errors.unit_price.message}</p>
+                )}
               </div>
             </div>
 

@@ -38,6 +38,7 @@ import {
   JOB_TYPES,
   PRIORITY_LEVELS,
   VEHICLE_TYPES,
+  WRAP_COVERAGE_PERCENT,
 } from "@/lib/constants";
 import type { Client } from "@/types/database";
 
@@ -156,20 +157,7 @@ export default function NewJob() {
     const selectedVehicle = VEHICLE_TYPES.find(
       (v) => v.value === values.vehicle_type
     );
-    const coveragePercent =
-      values.wrap_coverage === "full"
-        ? 100
-        : values.wrap_coverage === "three_quarter"
-          ? 75
-          : values.wrap_coverage === "half"
-            ? 50
-            : values.wrap_coverage === "partial"
-              ? 30
-              : values.wrap_coverage === "spot_graphics"
-                ? 15
-                : values.wrap_coverage === "lettering"
-                  ? 10
-                  : 100;
+    const coveragePercent = WRAP_COVERAGE_PERCENT[values.wrap_coverage] ?? 100;
 
     createJob.mutate(
       {
@@ -306,14 +294,13 @@ export default function NewJob() {
       {/* Step 2: Job Details */}
       {step === 2 && (
         <form
-          onSubmit={
-            isVehicleWrap
-              ? (e) => {
-                  e.preventDefault();
-                  setStep(3);
-                }
-              : handleSubmit(onSubmit)
-          }
+          onSubmit={handleSubmit((values) => {
+            if (isVehicleWrap) {
+              setStep(3);
+            } else {
+              onSubmit(values);
+            }
+          })}
           className="space-y-4"
         >
           {selectedClient && (

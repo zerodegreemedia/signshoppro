@@ -46,7 +46,9 @@ export function useClients(search?: string) {
       let query = supabase
         .from("clients")
         .select("*, jobs:jobs(count)")
-        .order("business_name");
+        .eq("archived", false)
+        .order("business_name")
+        .limit(100);
 
       if (search) {
         const safe = escapeFilterValue(search);
@@ -129,15 +131,19 @@ export function useDeleteClient() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("clients").delete().eq("id", id);
+      // Soft delete: mark as archived instead of permanently removing
+      const { error } = await supabase
+        .from("clients")
+        .update({ archived: true })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast.success("Client deleted successfully");
+      toast.success("Client archived successfully");
     },
     onError: (error: Error) => {
-      toast.error(`Failed to delete client: ${error.message}`);
+      toast.error(`Failed to archive client: ${error.message}`);
     },
   });
 }

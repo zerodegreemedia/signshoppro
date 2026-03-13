@@ -13,11 +13,11 @@ const clientSchema = z.object({
   business_name: z.string().min(1, "Business name is required"),
   contact_name: z.string().min(1, "Contact name is required"),
   email: z.string().min(1, "Email is required").email("Invalid email address"),
-  phone: z.string(),
+  phone: z.string().regex(/^$|^\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/, "Enter a valid phone number (e.g. 555-123-4567)"),
   address: z.string(),
   city: z.string(),
-  state: z.string(),
-  zip: z.string(),
+  state: z.string().regex(/^$|^[A-Za-z]{2}$/, "Use 2-letter state code (e.g. FL)"),
+  zip: z.string().regex(/^$|^\d{5}(-\d{4})?$/, "Enter a valid ZIP (e.g. 32801)"),
   notes: z.string(),
   tax_exempt: z.boolean(),
 });
@@ -108,6 +108,9 @@ export function ClientForm({
           {...register("phone")}
           placeholder="(555) 123-4567"
         />
+        {errors.phone && (
+          <p className="text-sm text-destructive">{errors.phone.message}</p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -127,10 +130,16 @@ export function ClientForm({
         <div className="space-y-2">
           <Label htmlFor="state">State</Label>
           <Input id="state" {...register("state")} placeholder="FL" />
+          {errors.state && (
+            <p className="text-sm text-destructive">{errors.state.message}</p>
+          )}
         </div>
         <div className="space-y-2 col-span-2 sm:col-span-1">
           <Label htmlFor="zip">ZIP</Label>
           <Input id="zip" {...register("zip")} placeholder="32801" />
+          {errors.zip && (
+            <p className="text-sm text-destructive">{errors.zip.message}</p>
+          )}
         </div>
       </div>
 
