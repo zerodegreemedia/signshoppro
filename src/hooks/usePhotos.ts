@@ -248,3 +248,30 @@ export function useDeletePhoto() {
     },
   });
 }
+
+interface UpdatePhotoInput {
+  photoId: string;
+  jobId: string;
+  updates: Partial<Pick<JobPhoto, "measurements" | "notes" | "caption">>;
+}
+
+export function useUpdatePhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: UpdatePhotoInput) => {
+      const { error } = await supabase
+        .from("job_photos")
+        .update(input.updates)
+        .eq("id", input.photoId);
+      if (error) throw error;
+      return { jobId: input.jobId };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["job-photos", result.jobId] });
+      toast.success("Photo updated");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update photo: ${error.message}`);
+    },
+  });
+}
