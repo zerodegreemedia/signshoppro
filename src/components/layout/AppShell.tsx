@@ -2,12 +2,16 @@ import { Outlet } from "react-router-dom";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
+import { CommandPalette } from "./CommandPalette";
 import { OfflineIndicator } from "./OfflineIndicator";
 import { PWAUpdatePrompt } from "./PWAUpdatePrompt";
 
 export function AppShell() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* Global search (Cmd/Ctrl+K) */}
+      <CommandPalette />
+
       {/* Desktop sidebar */}
       <Sidebar />
 
