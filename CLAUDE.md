@@ -44,7 +44,7 @@ npx supabase secrets set KEY=value    # Set server-side secrets
 src/
 ├── components/
 │   ├── ui/              # shadcn/ui (auto-generated — DO NOT manually edit)
-│   ├── layout/          # AppShell, MobileNav, Sidebar, Header
+│   ├── layout/          # AppShell, MobileNav, Sidebar, Header, CommandPalette
 │   ├── jobs/            # JobCard, JobDetail, StatusBadge, StatusTimeline
 │   ├── estimates/       # LineItemEditor, PricingCalculator, WrapCalculator
 │   ├── proofs/          # ProofViewer, ProofApproval, VersionHistory
@@ -150,7 +150,7 @@ Sedan: 200 | SUV: 250 | Pickup: 250 | Minivan: 300 | Cargo Van: 400 | Box Truck 
 ## Design Guidelines
 
 - Dark blue/slate color scheme (shadcn "slate" base) — professional, utilitarian
-- Bottom nav on mobile (5 icons: Dashboard, Jobs, New Job, Clients, Settings)
+- Bottom nav on mobile (4 destinations: Home, Jobs, Clients, More + raised center FAB with action sheet)
 - Collapsible sidebar on desktop (hidden on mobile)
 - Status badges: green=completed, blue=active, amber=waiting, red=issues
 - Card-based job list (not table) for mobile field use
