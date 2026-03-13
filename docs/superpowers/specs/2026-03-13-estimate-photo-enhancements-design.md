@@ -1,0 +1,249 @@
+# Estimate Builder & Photo Enhancements — Design Spec
+
+**Date:** 2026-03-13
+**Status:** Approved
+
+## Overview
+
+Four features that improve the estimating and photo workflows in SignShop Pro:
+
+1. **EstimateSheet** — Slide-over panel for creating/editing estimates with live totals
+2. **WrapCalculator** — Visual vehicle zone selector for wrap estimates
+3. **MeasurementOverlay** — SVG annotation layer for photo dimension measurements
+4. **Photo Gallery Improvements** — Category filter tabs + full-screen swipe viewer
+
+## 1. EstimateSheet
+
+### Component
+
+`src/components/estimates/EstimateSheet.tsx`
+
+Controlled component with `open`/`onOpenChange` props (same pattern as PhotoCapture).
+
+### Responsive behavior
+
+- **Mobile (< 768px):** `side="bottom"`, max-height 90vh
+- **Desktop (>= 768px):** `side="right"`, width 480px via className on SheetContent
+
+Detection via `useMediaQuery` hook or `window.innerWidth` check.
+
+### Content (top to bottom)
+
+1. **SheetHeader:** "Estimate — {jobTitle}" + estimate status badge
+2. **WrapCalculator** (conditional): shown when `job.job_type === 'vehicle_wrap'`, collapsed by default via Collapsible
+3. **QuickAddPresets** (existing component, relocated from Items tab)
+4. **LineItemEditor** (existing component, relocated from Items tab)
+5. **Sticky bottom bar:** subtotal / tax (8.25%) / total, live-updating via `calculateLineItemTotals()`. "Send to Client" button triggers status transition to `estimate_sent`.
+
+### Entry points (3 triggers)
+
+| Trigger | Location | Condition |
+|---------|----------|-----------|
+| Timeline node action | JobTimeline.tsx | Estimate-type nodes → "Edit Estimate" button |
+| Primary action | StickyActionBar.tsx | Status is `lead` or `estimate_draft` |
+| Summary card button | JobDetail.tsx side panel | Items tab replaced with read-only summary + "Edit Estimate" button |
+
+### Side panel Items tab change
+
+The Items tab in JobDetail's side panel becomes a **read-only estimate summary**:
+- Line item count, subtotal, tax, total
+- Estimate status badge
+- "Edit Estimate" button that opens EstimateSheet
+
+This eliminates duplicate editing surfaces while preserving at-a-glance info.
+
+### Data flow
+
+Uses existing `useLineItems(jobId)` hook. No new queries or mutations needed. The sticky total bar computes from the query cache via `calculateLineItemTotals()`.
+
+### Props
+
+```typescript
+interface EstimateSheetProps {
+  jobId: string;
+  jobTitle: string;
+  jobType: string;
+  vehicleTotalSqft?: number;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+```
+
+## 2. WrapCalculator
+
+### Component
+
+`src/components/estimates/WrapCalculator.tsx`
+
+### Zone layout
+
+CSS grid showing a stylized top-down vehicle silhouette with 6 tappable zones:
+
+| Zone | % of total sqft |
+|------|----------------|
+| Hood | 12% |
+| Roof | 10% |
+| Left Side | 25% |
+| Right Side | 25% |
+| Rear | 8% |
+| Tailgate | 5% |
+
+Total selectable coverage: 85% (remaining 15% = gaps, bumpers, non-wrappable areas).
+
+### Visual design
+
+- Vehicle silhouette: CSS-drawn rounded rectangle with zone grid overlaid
+- Selected zone: `bg-primary/20 border-primary` with fill transition
+- Unselected zone: `bg-muted border-border`
+- Zone labels show name + sqft contribution (e.g., "Hood — 24 sqft")
+- "Full Wrap" toggle button at top: selects/deselects all zones
+
+### Calculation
+
+```
+coverageSqft = selectedZones.reduce((sum, zone) => sum + zone.percent, 0) * vehicleTotalSqft
+```
+
+### Props
+
+```typescript
+interface WrapCalculatorProps {
+  vehicleTotalSqft: number;
+  onChange: (coverageSqft: number, selectedZones: string[]) => void;
+}
+```
+
+### Integration
+
+Rendered inside EstimateSheet, gated by `job.job_type === 'vehicle_wrap'`. Wrapped in a Collapsible component (collapsed by default, expandable via "Vehicle Zones" header).
+
+## 3. MeasurementOverlay
+
+### Component
+
+`src/components/photos/MeasurementOverlay.tsx`
+
+### Modes
+
+- **View mode** (default): renders SVG lines + labels as non-interactive overlay
+- **Edit mode**: activated by "Add Measurement" button on the photo viewer toolbar
+
+### Annotation flow (edit mode)
+
+1. Tap point A → small circle dot appears at tap position
+2. Tap point B → SVG line draws A→B, text input appears at midpoint
+3. User types dimension (free text, e.g. "12ft 6in") → press Enter or tap away to confirm
+4. Line + label saved to state
+5. Max 10 measurement lines per photo (show toast when limit reached)
+
+### Technical details
+
+- Absolute-positioned `<svg>` over the `<img>`, matching dimensions via ref
+- Coordinates stored as **percentages (0–100)** of image width/height — scales on resize
+- Lines: white stroke (2px) with dark outline (4px behind) for visibility on any background
+- Labels: white text on dark semi-transparent pill badge at line midpoint
+- Tap a label to select → small X delete button appears near label
+
+### Data shape
+
+```typescript
+interface MeasurementLine {
+  id: string;        // nanoid or uuid
+  x1: number;        // 0–100 percentage
+  y1: number;
+  x2: number;
+  y2: number;
+  label: string;     // free text, e.g. "12ft 6in"
+}
+```
+
+### Persistence
+
+Saved to `job_photos.measurements` JSONB field. Current schema stores `{ width, height }` strings — the new format adds a `lines` array:
+
+```json
+{
+  "width": "12ft",
+  "height": "8ft",
+  "lines": [
+    { "id": "abc", "x1": 10, "y1": 20, "x2": 80, "y2": 20, "label": "12ft 6in" }
+  ]
+}
+```
+
+Backward compatible — existing records without `lines` continue to work.
+
+### Integration
+
+PhotoViewer (now the full-screen swipe view) gets an "Add Measurement" toolbar button. Entering annotation mode renders MeasurementOverlay in edit mode over the current photo.
+
+### Props
+
+```typescript
+interface MeasurementOverlayProps {
+  photoId: string;
+  imageRef: React.RefObject<HTMLImageElement>;
+  lines: MeasurementLine[];
+  mode: 'view' | 'edit';
+  onLinesChange?: (lines: MeasurementLine[]) => void;
+}
+```
+
+## 4. Photo Gallery Improvements
+
+### Category tabs
+
+**Modify:** `src/components/photos/PhotoGrid.tsx`
+
+Current implementation already uses Tabs for filtering. Enhancement:
+
+- Replace TabsList with horizontal `ScrollArea` containing filter buttons
+- Simplified categories: **All | Before | Survey | Progress | After**
+  - "Survey" merges: measurement, reference, site_survey photo types
+- Active button: filled primary style. Inactive: ghost variant.
+- Sticky at top of photo grid area for easy access while scrolling
+
+### Full-screen swipe view
+
+**Replace** current PhotoViewer Dialog with a custom full-screen overlay.
+
+**Component:** Modify `src/components/photos/PhotoViewer.tsx`
+
+**Layout:**
+- `fixed inset-0 z-50 bg-black` — full viewport overlay
+- Photo: `object-contain w-full h-full` centered
+- Close button (X): top-left, white on semi-transparent dark pill
+- Counter: "3 / 12" top-right, same pill style
+- Toolbar: bottom center — "Add Measurement" button + photo type label
+
+**Navigation:**
+- **Touch:** `onTouchStart` / `onTouchMove` / `onTouchEnd` — swipe threshold 50px horizontal
+- **Desktop:** left/right arrow buttons on sides + keyboard arrow key support
+- **Transition:** CSS transform translateX slide animation between photos
+
+**Photo list:** receives filtered photo array from PhotoGrid (respects active category tab).
+
+**Integration with MeasurementOverlay:**
+- "Add Measurement" button in toolbar toggles MeasurementOverlay edit mode
+- View mode lines always render if photo has measurement data
+- Save triggers `useUpdatePhoto` mutation to persist lines to JSONB
+
+## File change summary
+
+| Action | File |
+|--------|------|
+| CREATE | `src/components/estimates/EstimateSheet.tsx` |
+| CREATE | `src/components/estimates/WrapCalculator.tsx` |
+| CREATE (rewrite) | `src/components/photos/MeasurementOverlay.tsx` |
+| MODIFY | `src/components/photos/PhotoGrid.tsx` |
+| MODIFY | `src/components/photos/PhotoViewer.tsx` |
+| MODIFY | `src/components/jobs/JobTimeline.tsx` |
+| MODIFY | `src/components/jobs/StickyActionBar.tsx` |
+| MODIFY | `src/pages/JobDetail.tsx` |
+
+## Non-goals
+
+- No new Supabase migrations (measurements JSONB field already exists)
+- No new hooks (reuse useLineItems, useJobPhotos, useUploadPhoto)
+- No external swipe/carousel libraries
+- No vector/SVG export from measurement overlay
