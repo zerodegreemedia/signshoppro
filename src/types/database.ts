@@ -110,6 +110,21 @@ export interface Proof {
   created_at: string;
 }
 
+export interface MeasurementLine {
+  id: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  label: string;
+}
+
+export interface PhotoMeasurements {
+  width?: string;
+  height?: string;
+  lines?: MeasurementLine[];
+}
+
 export interface JobPhoto {
   id: string;
   job_id: string;
@@ -120,7 +135,7 @@ export interface JobPhoto {
   photo_type: "before" | "progress" | "after" | "measurement" | "reference" | "site_survey";
   caption: string | null;
   notes: string | null;
-  measurements: Record<string, string> | null;
+  measurements: PhotoMeasurements | null;
   gps_latitude: number | null;
   gps_longitude: number | null;
   taken_at: string | null;

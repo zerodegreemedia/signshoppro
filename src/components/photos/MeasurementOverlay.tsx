@@ -1,10 +1,12 @@
+import type { PhotoMeasurements } from "@/types/database";
+
 interface MeasurementOverlayProps {
-  measurements: Record<string, string>;
+  measurements: PhotoMeasurements;
 }
 
 export function MeasurementOverlay({ measurements }: MeasurementOverlayProps) {
-  const width = measurements.width;
-  const height = measurements.height;
+  const width = measurements?.width;
+  const height = measurements?.height;
 
   if (!width && !height) return null;
 
