@@ -69,6 +69,8 @@ function App() {
         <Route path="/estimates" element={<PlaceholderPage title="Estimates" />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/ai/logo" element={<LogoRegenerate />} />
+        <Route path="/photos/quick" element={<PlaceholderPage title="Quick Photo" />} />
+        <Route path="/help" element={<PlaceholderPage title="Help & Support" />} />
       </Route>
 
       {/* 404 catch-all */}

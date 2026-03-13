@@ -88,10 +88,7 @@ export function MobileNav() {
   const handleFabAction = (action: (typeof fabActions)[number]) => {
     setFabOpen(false);
     if (action.action === "search") {
-      // Dispatch Cmd+K event to open command palette
-      window.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true })
-      );
+      window.dispatchEvent(new CustomEvent("open-command-palette"));
       return;
     }
     if (action.to) {

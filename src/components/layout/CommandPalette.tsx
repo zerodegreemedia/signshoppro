@@ -21,7 +21,7 @@ export function CommandPalette() {
   const { data: jobs } = useJobs();
   const { data: clients } = useClients();
 
-  // Listen for Cmd/Ctrl+K
+  // Listen for Cmd/Ctrl+K and custom open-command-palette event
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -29,8 +29,15 @@ export function CommandPalette() {
         setOpen((prev) => !prev);
       }
     }
+    function handleOpen() {
+      setOpen(true);
+    }
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("open-command-palette", handleOpen);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("open-command-palette", handleOpen);
+    };
   }, []);
 
   const query = search.toLowerCase().trim();
