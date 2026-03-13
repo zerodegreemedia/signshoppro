@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +15,7 @@ import {
   DollarSign,
   Image,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { useJob, useUpdateJob, useUpdateJobStatus } from "@/hooks/useJobs";
 import { useAuth } from "@/hooks/useAuth";
@@ -504,6 +505,16 @@ export default function JobDetail() {
               </CardContent>
             </Card>
           )}
+
+          {/* AI Logo Tool */}
+          <RoleGate requiredRole="admin">
+            <Button variant="outline" className="w-full" asChild>
+              <Link to={`/ai/logo?jobId=${job.id}`}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Clean Up Client Logo
+              </Link>
+            </Button>
+          </RoleGate>
 
           {/* Status Timeline */}
           <Card>
