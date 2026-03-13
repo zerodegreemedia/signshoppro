@@ -42,9 +42,7 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand text-brand-foreground font-bold text-sm">
-          S
-        </div>
+        <img src="/logo.svg" alt="SignShop Pro" className="h-8 w-8 shrink-0 rounded-lg" />
         {!collapsed && (
           <span className="text-lg font-bold tracking-tight">
             SignShop Pro

@@ -15,7 +15,7 @@ export function OfflineIndicator() {
           ? "bg-green-500 text-white"
           : isSyncing
             ? "bg-blue-500 text-white"
-            : "bg-amber-500 text-amber-950"
+            : "bg-amber-500 text-white"
       }`}
     >
       {showSyncComplete ? (

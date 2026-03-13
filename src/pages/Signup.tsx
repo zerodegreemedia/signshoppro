@@ -89,11 +89,16 @@ export default function Signup() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-          <CardDescription>Sign up for SignShop Pro</CardDescription>
+    <div className="flex min-h-screen items-center justify-center px-4 bg-gradient-to-br from-background via-background to-brand/5">
+      <Card className="w-full max-w-sm border-t-4 border-t-brand shadow-lg">
+        <CardHeader className="text-center space-y-3">
+          <div className="mx-auto">
+            <img src="/logo.svg" alt="SignShop Pro" className="h-14 w-14 mx-auto rounded-xl" />
+          </div>
+          <div>
+            <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
+            <CardDescription>Sign up for SignShop Pro</CardDescription>
+          </div>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">

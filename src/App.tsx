@@ -15,6 +15,7 @@ const Clients = lazy(() => import("@/pages/Clients"));
 const ClientDetail = lazy(() => import("@/pages/ClientDetail"));
 const EstimateBuilder = lazy(() => import("@/pages/EstimateBuilder"));
 const LogoRegenerate = lazy(() => import("@/pages/LogoRegenerate"));
+const Settings = lazy(() => import("@/pages/Settings"));
 
 function PageLoader() {
   return (
@@ -65,7 +66,7 @@ function App() {
         <Route path="/clients/:id" element={<ClientDetail />} />
         <Route path="/estimates/:jobId" element={<EstimateBuilder />} />
         <Route path="/estimates" element={<PlaceholderPage title="Estimates" />} />
-        <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="/ai/logo" element={<LogoRegenerate />} />
       </Route>
     </Routes>

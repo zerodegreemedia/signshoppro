@@ -10,11 +10,11 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useJobStats, useJobs } from "@/hooks/useJobs";
 import { JobCard } from "@/components/jobs/JobCard";
-import { RoleGate } from "@/components/auth/RoleGate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuickPhotoButton } from "@/components/photos/QuickPhotoButton";
+import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
   const { isAdmin, profile } = useAuth();
@@ -30,6 +30,7 @@ export default function Dashboard() {
       icon: Briefcase,
       iconColor: "text-brand",
       iconBg: "bg-brand/10",
+      featured: true,
     },
     {
       title: "Pending Estimates",
@@ -86,21 +87,28 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Greeting */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">
-          Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
-        </h2>
-        <p className="text-muted-foreground">
-          {isAdmin
-            ? "Here's what's happening with your shop today."
-            : "Here's the status of your projects."}
-        </p>
-      </div>
+      <Card className="bg-gradient-to-r from-brand/10 via-brand/5 to-transparent border-none shadow-none">
+        <CardContent className="flex items-center gap-4 py-5">
+          <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand text-brand-foreground font-bold text-lg">
+            {profile?.full_name?.[0] ?? "S"}
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">
+              Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
+            </h2>
+            <p className="text-muted-foreground">
+              {isAdmin
+                ? "Here's what's happening with your shop today."
+                : "Here's the status of your projects."}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
-          <Card key={card.title} className="transition-all duration-200 hover:shadow-md">
+          <Card key={card.title} className={cn("transition-all duration-200 hover:shadow-md", (card as { featured?: boolean }).featured && "border-brand/30 shadow-md")}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {card.title}
@@ -192,23 +200,6 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Admin-only revenue section */}
-      <RoleGate requiredRole="admin">
-        <div>
-          <h3 className="text-lg font-semibold mb-3">Revenue Overview</h3>
-          <Card>
-            <CardContent className="py-8">
-              <div className="text-center text-muted-foreground">
-                <DollarSign className="mx-auto h-10 w-10 mb-3 opacity-40" />
-                <p className="font-medium">Revenue tracking coming soon</p>
-                <p className="text-sm mt-1">
-                  Charts and analytics will appear here.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </RoleGate>
     </div>
   );
 }

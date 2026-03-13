@@ -12,6 +12,8 @@ import {
   Phone,
   Car,
   Calendar,
+  CreditCard,
+  ClipboardList,
   DollarSign,
   Image,
   Loader2,
@@ -351,21 +353,26 @@ export default function JobDetail() {
 
       {/* Tabs */}
       <Tabs defaultValue="overview">
-        <TabsList className="w-full overflow-x-auto">
-          <TabsTrigger value="overview" className="flex-1 text-xs sm:text-sm">
-            Overview
+        <TabsList className="w-full">
+          <TabsTrigger value="overview" className="flex-1 text-xs sm:text-sm gap-1.5">
+            <ClipboardList className="h-3.5 w-3.5 sm:hidden" />
+            <span className="hidden sm:inline">Overview</span>
           </TabsTrigger>
-          <TabsTrigger value="line-items" className="flex-1 text-xs sm:text-sm">
-            Line Items
+          <TabsTrigger value="line-items" className="flex-1 text-xs sm:text-sm gap-1.5">
+            <DollarSign className="h-3.5 w-3.5 sm:hidden" />
+            <span className="hidden sm:inline">Line Items</span>
           </TabsTrigger>
-          <TabsTrigger value="photos" className="flex-1 text-xs sm:text-sm">
-            Photos{photos?.length ? ` (${photos.length})` : ""}
+          <TabsTrigger value="photos" className="flex-1 text-xs sm:text-sm gap-1.5">
+            <Image className="h-3.5 w-3.5 sm:hidden" />
+            <span className="hidden sm:inline">Photos{photos?.length ? ` (${photos.length})` : ""}</span>
           </TabsTrigger>
-          <TabsTrigger value="proofs" className="flex-1 text-xs sm:text-sm">
-            Proofs{proofs?.length ? ` (${proofs.length})` : ""}
+          <TabsTrigger value="proofs" className="flex-1 text-xs sm:text-sm gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 sm:hidden" />
+            <span className="hidden sm:inline">Proofs{proofs?.length ? ` (${proofs.length})` : ""}</span>
           </TabsTrigger>
-          <TabsTrigger value="payments" className="flex-1 text-xs sm:text-sm">
-            Payments
+          <TabsTrigger value="payments" className="flex-1 text-xs sm:text-sm gap-1.5">
+            <CreditCard className="h-3.5 w-3.5 sm:hidden" />
+            <span className="hidden sm:inline">Payments</span>
           </TabsTrigger>
         </TabsList>
 

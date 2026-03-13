@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Save, Send, CreditCard } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Send } from "lucide-react";
 import { useJob, useUpdateJob, useUpdateJobStatus } from "@/hooks/useJobs";
 import { useLineItems } from "@/hooks/useLineItems";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,16 +10,9 @@ import {
 import type { LineItemForCalc } from "@/features/pricing/estimating-engine";
 import { LineItemEditor } from "@/components/estimates/LineItemEditor";
 import QuickAddPresets from "@/components/estimates/QuickAddPresets";
-import { RoleGate } from "@/components/auth/RoleGate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 export default function EstimateBuilder() {
   const { jobId } = useParams<{ jobId: string }>();
@@ -111,7 +104,6 @@ export default function EstimateBuilder() {
   }
 
   return (
-    <TooltipProvider>
       <div className="space-y-4 pb-8">
         {/* Back button + title */}
         <div className="flex items-center gap-3">
@@ -187,25 +179,7 @@ export default function EstimateBuilder() {
             Send to Client
           </Button>
 
-          <RoleGate requiredRole="admin">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="w-full">
-                  <Button
-                    className="w-full gap-2"
-                    variant="secondary"
-                    disabled
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    Generate Payment Link
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Coming in Phase 7</TooltipContent>
-            </Tooltip>
-          </RoleGate>
         </div>
       </div>
-    </TooltipProvider>
   );
 }

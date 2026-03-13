@@ -32,7 +32,7 @@ export function MobileNav() {
               end={item.to === "/"}
               className={({ isActive }) =>
                 cn(
-                  "flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-lg px-3 py-1 text-xs transition-all duration-200",
+                  "relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-lg px-3 py-1 text-xs transition-all duration-200",
                   isActive
                     ? "text-brand"
                     : "text-muted-foreground hover:text-foreground",
@@ -58,6 +58,9 @@ export function MobileNav() {
                   >
                     {item.label}
                   </span>
+                  {isActive && (
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-5 rounded-full bg-brand" />
+                  )}
                 </>
               )}
             </NavLink>

@@ -110,7 +110,7 @@ export default function Jobs() {
       {/* FAB */}
       <Button
         size="icon"
-        className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg md:bottom-6 z-40"
+        className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg active:scale-90 transition-transform md:bottom-6 z-40"
         onClick={() => navigate("/jobs/new")}
       >
         <Plus className="h-6 w-6" />
