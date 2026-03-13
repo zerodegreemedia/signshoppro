@@ -163,3 +163,86 @@
     font-family: var(--font-display);
     }
 }
+
+@layer utilities {
+  /* Fade up entrance */
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-up {
+    animation: fadeUp 400ms ease both;
+  }
+
+  /* Shimmer for skeleton loading */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--muted) 25%,
+      var(--secondary) 50%,
+      var(--muted) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* Pulse glow using brand-glow */
+  @keyframes pulseGlow {
+    0%, 100% {
+      box-shadow: 0 0 0 0 var(--brand-glow);
+    }
+    50% {
+      box-shadow: 0 0 16px 4px var(--brand-glow);
+    }
+  }
+  .animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  /* Hover lift */
+  .hover-lift {
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--brand-glow);
+  }
+
+  /* Active press */
+  .active-press:active {
+    transform: scale(0.97);
+  }
+
+  /* Noise overlay */
+  .noise-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+
+  /* Text gradient brand */
+  .text-gradient-brand {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
