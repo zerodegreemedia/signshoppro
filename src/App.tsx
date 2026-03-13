@@ -10,6 +10,7 @@ import JobDetail from "@/pages/JobDetail";
 import Clients from "@/pages/Clients";
 import ClientDetail from "@/pages/ClientDetail";
 import EstimateBuilder from "@/pages/EstimateBuilder";
+import LogoRegenerate from "@/pages/LogoRegenerate";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -46,7 +47,7 @@ function App() {
         <Route path="/estimates/:jobId" element={<EstimateBuilder />} />
         <Route path="/estimates" element={<PlaceholderPage title="Estimates" />} />
         <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
-        <Route path="/ai/logo" element={<PlaceholderPage title="AI Logo Regeneration" />} />
+        <Route path="/ai/logo" element={<LogoRegenerate />} />
       </Route>
     </Routes>
   );
