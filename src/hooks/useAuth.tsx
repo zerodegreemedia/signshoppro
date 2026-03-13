@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import type { User, Session } from "@supabase/supabase-js";
 import type { Profile } from "@/types/database";
+import { toast } from "sonner";
 
 interface AuthState {
   user: User | null;
@@ -37,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
     if (error) {
       console.error("Failed to fetch profile:", error.message);
+      toast.error("Failed to load your profile. Some features may be limited.");
       return null;
     }
     return data as Profile | null;

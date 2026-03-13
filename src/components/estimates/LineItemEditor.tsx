@@ -82,7 +82,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   material: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   labor: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
   design: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
-  installation: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
+  installation: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
   other: "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300",
 };
 
@@ -259,24 +259,26 @@ export function LineItemEditor({ jobId, taxRate, isAdmin }: LineItemEditorProps)
                   <div className="flex flex-col gap-0.5 pt-1">
                     <button
                       type="button"
-                      className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                      className="p-1.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
                       disabled={idx === 0}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleReorder(item, "up");
                       }}
+                      aria-label="Move item up"
                     >
                       <ChevronUp className="h-3.5 w-3.5" />
                     </button>
-                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40" />
+                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40" aria-hidden="true" />
                     <button
                       type="button"
-                      className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                      className="p-1.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
                       disabled={idx === lineItems.length - 1}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleReorder(item, "down");
                       }}
+                      aria-label="Move item down"
                     >
                       <ChevronDown className="h-3.5 w-3.5" />
                     </button>
@@ -505,7 +507,7 @@ export function LineItemEditor({ jobId, taxRate, isAdmin }: LineItemEditorProps)
               {!isNewItem && editingItem && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button type="button" variant="destructive" size="icon">
+                    <Button type="button" variant="destructive" size="icon" aria-label="Delete line item">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </AlertDialogTrigger>

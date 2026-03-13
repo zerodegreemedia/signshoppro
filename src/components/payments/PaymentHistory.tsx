@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { formatDate } from "@/lib/utils";
 import { Receipt } from "lucide-react";
 import type { Payment } from "@/types/database";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -119,9 +119,7 @@ export function PaymentHistory({ payments, isLoading }: PaymentHistoryProps) {
                 )}
               </div>
               <div className="text-xs text-muted-foreground text-right">
-                {payment.paid_at
-                  ? format(new Date(payment.paid_at), "MMM d, yyyy")
-                  : format(new Date(payment.created_at), "MMM d, yyyy")}
+                {formatDate(payment.paid_at ?? payment.created_at, "medium")}
               </div>
             </div>
           ))}

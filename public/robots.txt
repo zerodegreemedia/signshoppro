@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# SignShop Pro is a login-protected PWA — most pages require authentication
+# Search engines will only see the login page

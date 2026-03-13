@@ -104,6 +104,7 @@ export function Sidebar() {
             "w-full min-h-[44px] transition-all duration-200",
             collapsed && "px-2"
           )}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
             <ChevronRight className="h-4 w-4" />

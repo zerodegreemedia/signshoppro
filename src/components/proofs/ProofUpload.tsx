@@ -165,8 +165,9 @@ export function ProofUpload({ jobId, jobStatus }: ProofUploadProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-2 right-2 h-7 w-7 bg-background/80"
+                className="absolute top-2 right-2 h-9 w-9 bg-background/80"
                 onClick={clearSelection}
+                aria-label="Remove selected file"
               >
                 <X className="h-4 w-4" />
               </Button>

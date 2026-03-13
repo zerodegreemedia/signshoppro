@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/jobs/StatusBadge";
 import { RoleGate } from "@/components/auth/RoleGate";
 import type { JobWithClient } from "@/hooks/useJobs";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/utils";
 
 const JOB_TYPE_ICONS: Record<string, React.ElementType> = {
   vehicle_wrap: Car,
@@ -69,7 +69,7 @@ export function JobCard({ job, index }: JobCardProps) {
               {job.due_date && (
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {format(new Date(job.due_date), "MMM d")}
+                  {formatDate(job.due_date, "short")}
                 </span>
               )}
               <RoleGate requiredRole="admin">

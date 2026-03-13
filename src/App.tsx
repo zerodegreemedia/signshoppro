@@ -16,6 +16,7 @@ const ClientDetail = lazy(() => import("@/pages/ClientDetail"));
 const EstimateBuilder = lazy(() => import("@/pages/EstimateBuilder"));
 const LogoRegenerate = lazy(() => import("@/pages/LogoRegenerate"));
 const Settings = lazy(() => import("@/pages/Settings"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
 
 function PageLoader() {
   return (
@@ -69,6 +70,9 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/ai/logo" element={<LogoRegenerate />} />
       </Route>
+
+      {/* 404 catch-all */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
     </Suspense>
   );

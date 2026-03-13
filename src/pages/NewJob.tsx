@@ -206,6 +206,7 @@ export default function NewJob() {
             }
           }}
           className="-ml-2"
+          aria-label="Go back"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -238,8 +239,10 @@ export default function NewJob() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="relative">
+                <Label htmlFor="client-search" className="sr-only">Search clients</Label>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
+                  id="client-search"
                   placeholder="Search clients..."
                   value={clientSearch}
                   onChange={(e) => setClientSearch(e.target.value)}

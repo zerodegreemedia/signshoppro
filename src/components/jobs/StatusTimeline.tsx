@@ -1,8 +1,7 @@
 import { CheckCircle2, Circle, Clock } from "lucide-react";
 import { JOB_STATUSES } from "@/lib/constants";
 import type { JobStatusHistory } from "@/types/database";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { cn, formatDate } from "@/lib/utils";
 
 interface StatusTimelineProps {
   currentStatus: string;
@@ -56,7 +55,7 @@ export function StatusTimeline({ currentStatus, history }: StatusTimelineProps) 
             </p>
             {statusTimestamps.has(currentStatus) && (
               <p className="text-xs text-muted-foreground">
-                {format(new Date(statusTimestamps.get(currentStatus)!), "MMM d, yyyy h:mm a")}
+                {formatDate(statusTimestamps.get(currentStatus)!, "datetime")}
               </p>
             )}
           </div>
@@ -107,7 +106,7 @@ export function StatusTimeline({ currentStatus, history }: StatusTimelineProps) 
               </p>
               {timestamp && (isCompleted || isCurrent) && (
                 <p className="text-xs text-muted-foreground">
-                  {format(new Date(timestamp), "MMM d, yyyy h:mm a")}
+                  {formatDate(timestamp, "datetime")}
                 </p>
               )}
             </div>

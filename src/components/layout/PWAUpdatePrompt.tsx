@@ -29,6 +29,7 @@ export function PWAUpdatePrompt() {
             size="sm"
             variant="ghost"
             onClick={() => setNeedRefresh(false)}
+            aria-label="Dismiss update notification"
           >
             <X className="h-4 w-4" />
           </Button>

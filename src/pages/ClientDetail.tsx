@@ -27,7 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/utils";
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
@@ -230,7 +230,7 @@ export default function ClientDetail() {
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  Client since {format(new Date(client.created_at), "MMMM d, yyyy")}
+                  Client since {formatDate(client.created_at, "long")}
                 </span>
               </div>
 

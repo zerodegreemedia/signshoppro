@@ -94,6 +94,7 @@ export function PaymentLinkButton({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowQr(!showQr)}
+                aria-label={showQr ? "Hide QR code" : "Show QR code"}
               >
                 <QrCode className="h-3.5 w-3.5" />
               </Button>

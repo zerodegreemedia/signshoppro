@@ -65,7 +65,7 @@ import { ProofApproval } from "@/components/proofs/ProofApproval";
 import { useJobPhotos } from "@/hooks/usePhotos";
 import { useJobPayments } from "@/hooks/usePayments";
 import { useJobProofs } from "@/hooks/useProofs";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/utils";
 
 // Status transition map: current status → available next statuses
 const STATUS_TRANSITIONS: Record<string, { label: string; value: string }[]> = {
@@ -397,7 +397,7 @@ export default function JobDetail() {
                     Due Date
                   </span>
                   <span className="font-medium">
-                    {format(new Date(job.due_date), "MMM d, yyyy")}
+                    {formatDate(job.due_date, "medium")}
                   </span>
                 </div>
               )}
@@ -627,7 +627,7 @@ export default function JobDetail() {
                             />
                           </div>
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(p.created_at), "MMM d, h:mm a")}
+                            {formatDate(p.created_at, "datetime")}
                           </span>
                         </div>
                       ))}

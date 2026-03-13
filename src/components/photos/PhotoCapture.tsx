@@ -198,23 +198,29 @@ export function PhotoCapture({ jobId, clientId, open: controlledOpen, onOpenChan
         <div className="space-y-2">
           <Label>Measurements</Label>
           <div className="flex gap-2 items-center">
-            <Input
-              type="text"
-              inputMode="decimal"
-              placeholder="Width"
-              value={width}
-              onChange={(e) => setWidth(e.target.value)}
-              className="flex-1"
-            />
+            <div className="flex-1">
+              <Label htmlFor="measurement-width" className="sr-only">Width</Label>
+              <Input
+                id="measurement-width"
+                type="text"
+                inputMode="decimal"
+                placeholder="Width"
+                value={width}
+                onChange={(e) => setWidth(e.target.value)}
+              />
+            </div>
             <span className="text-sm text-muted-foreground">×</span>
-            <Input
-              type="text"
-              inputMode="decimal"
-              placeholder="Height"
-              value={height}
-              onChange={(e) => setHeight(e.target.value)}
-              className="flex-1"
-            />
+            <div className="flex-1">
+              <Label htmlFor="measurement-height" className="sr-only">Height</Label>
+              <Input
+                id="measurement-height"
+                type="text"
+                inputMode="decimal"
+                placeholder="Height"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+              />
+            </div>
             <span className="text-sm text-muted-foreground font-medium">ft</span>
           </div>
         </div>

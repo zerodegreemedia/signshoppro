@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/utils";
 import {
   ZoomIn,
   ZoomOut,
@@ -146,13 +146,13 @@ export function ProofViewer({ proofs, isLoading }: ProofViewerProps) {
         {/* Zoom controls */}
         {!isPdf && (
           <div className="flex items-center justify-center gap-1">
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleZoomOut}>
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleZoomOut} aria-label="Zoom out">
               <ZoomOut className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" className="h-8 text-xs px-3" onClick={handleResetZoom}>
+            <Button variant="outline" size="sm" className="h-9 text-xs px-3" onClick={handleResetZoom}>
               {Math.round(zoom * 100)}%
             </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleZoomIn}>
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleZoomIn} aria-label="Zoom in">
               <ZoomIn className="h-4 w-4" />
             </Button>
           </div>
@@ -163,7 +163,7 @@ export function ProofViewer({ proofs, isLoading }: ProofViewerProps) {
           <div className="flex items-center justify-between">
             <StatusBadge status={PROOF_STATUS_MAP[currentProof.status] ?? currentProof.status} />
             <span className="text-xs text-muted-foreground">
-              {format(new Date(currentProof.created_at), "MMM d, yyyy h:mm a")}
+              {formatDate(currentProof.created_at, "datetime")}
             </span>
           </div>
 

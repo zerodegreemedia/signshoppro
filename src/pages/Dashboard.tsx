@@ -93,9 +93,9 @@ export default function Dashboard() {
             {profile?.full_name?.[0] ?? "S"}
           </div>
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight">
               Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
-            </h2>
+            </h1>
             <p className="text-muted-foreground">
               {isAdmin
                 ? "Here's what's happening with your shop today."
@@ -150,7 +150,7 @@ export default function Dashboard() {
 
       {/* Recent jobs */}
       <div>
-        <h3 className="text-lg font-semibold mb-3">Recent Jobs</h3>
+        <h2 className="text-lg font-semibold mb-3">Recent Jobs</h2>
         {jobsLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (

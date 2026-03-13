@@ -31,6 +31,7 @@ export default function Jobs() {
 
   return (
     <div className="space-y-4">
+      <h1 className="sr-only">Jobs</h1>
       {/* Status filter tabs */}
       <Tabs
         value={statusCategory}
