@@ -10,7 +10,12 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["pwa-192x192.png", "pwa-512x512.png"],
+      includeAssets: [
+        "logo.svg",
+        "pwa-192x192.png",
+        "pwa-512x512.png",
+        "apple-touch-icon.png",
+      ],
       manifest: {
         name: "SignShop Pro",
         short_name: "SignShop",
@@ -36,6 +41,55 @@ export default defineConfig({
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",
+          },
+        ],
+      },
+      workbox: {
+        runtimeCaching: [
+          {
+            // HTML pages — network first, fall back to cache
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "pages-cache",
+              expiration: { maxEntries: 50 },
+            },
+          },
+          {
+            // Supabase API calls — network first, fall back to cache
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-cache",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60, // 1 hour
+              },
+            },
+          },
+          {
+            // Images from Supabase Storage — cache first, 7 day expiration
+            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "image-cache",
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+              },
+            },
+          },
+          {
+            // Google Fonts or other CDN assets
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "font-cache",
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+            },
           },
         ],
       },

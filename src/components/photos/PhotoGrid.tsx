@@ -1,12 +1,20 @@
 import { useState } from "react";
-import { Camera } from "lucide-react";
-import { useJobPhotos } from "@/hooks/usePhotos";
+import { Camera, CloudOff } from "lucide-react";
+import { useJobPhotos, useOfflinePhotos } from "@/hooks/usePhotos";
 import { PhotoViewer } from "./PhotoViewer";
 import { PHOTO_TYPES } from "@/lib/constants";
 import type { JobPhoto } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+interface GridPhoto {
+  id: string;
+  file_url: string;
+  photo_type: string;
+  notes: string | null;
+  isOffline: boolean;
+}
 
 interface PhotoGridProps {
   jobId: string;
@@ -15,13 +23,31 @@ interface PhotoGridProps {
 
 export function PhotoGrid({ jobId, onAddPhoto }: PhotoGridProps) {
   const { data: photos, isLoading } = useJobPhotos(jobId);
+  const { data: offlinePhotos } = useOfflinePhotos(jobId);
   const [filter, setFilter] = useState<string>("all");
   const [selectedPhoto, setSelectedPhoto] = useState<JobPhoto | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
 
-  const filteredPhotos = filter === "all"
-    ? photos ?? []
-    : (photos ?? []).filter((p) => p.photo_type === filter);
+  // Merge offline photos (shown first) with server photos
+  const offlineItems: GridPhoto[] = (offlinePhotos ?? []).map((op) => ({
+    id: op.id,
+    file_url: op.blobUrl,
+    photo_type: op.photoType,
+    notes: op.notes,
+    isOffline: true,
+  }));
+
+  const serverItems: GridPhoto[] = (photos ?? []).map((p) => ({
+    ...p,
+    isOffline: false,
+  }));
+
+  const allPhotos = [...offlineItems, ...serverItems];
+
+  const filteredPhotos =
+    filter === "all"
+      ? allPhotos
+      : allPhotos.filter((p) => p.photo_type === filter);
 
   const handlePhotoClick = (photo: JobPhoto) => {
     setSelectedPhoto(photo);
@@ -47,7 +73,7 @@ export function PhotoGrid({ jobId, onAddPhoto }: PhotoGridProps) {
       <Tabs value={filter} onValueChange={setFilter}>
         <TabsList className="w-full overflow-x-auto flex-nowrap">
           <TabsTrigger value="all" className="text-xs flex-shrink-0">
-            All{photos?.length ? ` (${photos.length})` : ""}
+            All{allPhotos.length ? ` (${allPhotos.length})` : ""}
           </TabsTrigger>
           {PHOTO_TYPES.map((type) => {
             const count = (photos ?? []).filter((p) => p.photo_type === type.value).length;
@@ -101,7 +127,13 @@ export function PhotoGrid({ jobId, onAddPhoto }: PhotoGridProps) {
               <button
                 key={photo.id}
                 type="button"
-                onClick={() => handlePhotoClick(photo)}
+                onClick={() => {
+                  if (!photo.isOffline) {
+                    // Find the full JobPhoto from server data for the viewer
+                    const full = (photos ?? []).find((p) => p.id === photo.id);
+                    if (full) handlePhotoClick(full);
+                  }
+                }}
                 className="relative aspect-square rounded-lg overflow-hidden group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <img
@@ -116,6 +148,12 @@ export function PhotoGrid({ jobId, onAddPhoto }: PhotoGridProps) {
                 >
                   {typeLabel}
                 </Badge>
+                {photo.isOffline && (
+                  <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                    <CloudOff className="h-3 w-3" />
+                    Offline
+                  </div>
+                )}
               </button>
             );
           })}

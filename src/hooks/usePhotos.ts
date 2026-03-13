@@ -4,6 +4,8 @@ import type { JobPhoto } from "@/types/database";
 import type { PhotoType } from "@/lib/constants";
 import { toast } from "sonner";
 import imageCompression from "browser-image-compression";
+import { addToQueue, storePhotoBlob, getAllPhotoBlobs } from "@/lib/offline-db";
+import type { QueueItem, PhotoBlobItem } from "@/lib/offline-db";
 
 export interface UploadPhotoInput {
   file: File;
@@ -44,7 +46,7 @@ export function useUploadPhoto() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: UploadPhotoInput) => {
-      // 1. Compress image
+      // 1. Compress image (works offline — client-side only)
       const compressed = await imageCompression(input.file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
@@ -55,6 +57,64 @@ export function useUploadPhoto() {
       const uuid = crypto.randomUUID();
       const storagePath = `${input.clientId}/${input.jobId}/${input.photoType}/${uuid}.jpg`;
 
+      // --- OFFLINE PATH ---
+      if (!navigator.onLine) {
+        const queueId = crypto.randomUUID();
+        const takenAt = new Date().toISOString();
+
+        // Store blob in IndexedDB
+        const blobItem: PhotoBlobItem = {
+          id: queueId,
+          blob: compressed,
+          metadata: {
+            storagePath,
+            jobId: input.jobId,
+            clientId: input.clientId,
+            photoType: input.photoType,
+            notes: input.notes ?? null,
+            measurements: input.measurements ?? null,
+            gpsLatitude: input.gpsLatitude ?? null,
+            gpsLongitude: input.gpsLongitude ?? null,
+            takenAt,
+          },
+        };
+        await storePhotoBlob(blobItem);
+
+        // Add to mutation queue
+        const queueItem: QueueItem = {
+          id: queueId,
+          type: "create",
+          table: "photo_upload",
+          data: { storagePath, jobId: input.jobId },
+          timestamp: Date.now(),
+        };
+        await addToQueue(queueItem);
+
+        // Return a temporary local photo for immediate UI display
+        const localUrl = URL.createObjectURL(compressed);
+        const tempPhoto: JobPhoto = {
+          id: `offline-${queueId}`,
+          job_id: input.jobId,
+          uploaded_by: "offline",
+          storage_path: storagePath,
+          file_url: localUrl,
+          thumbnail_url: null,
+          photo_type: input.photoType,
+          caption: null,
+          notes: input.notes ?? null,
+          measurements: input.measurements
+            ? { width: input.measurements.width, height: input.measurements.height }
+            : null,
+          gps_latitude: input.gpsLatitude ?? null,
+          gps_longitude: input.gpsLongitude ?? null,
+          taken_at: takenAt,
+          created_at: takenAt,
+        };
+
+        return { photo: tempPhoto, jobId: input.jobId, offline: true };
+      }
+
+      // --- ONLINE PATH ---
       // 3. Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("job-photos")
@@ -94,20 +154,53 @@ export function useUploadPhoto() {
         .single();
 
       if (insertError) {
-        // Best-effort cleanup: remove orphaned file from storage
         await supabase.storage.from("job-photos").remove([storagePath]);
         throw insertError;
       }
 
-      return { photo: data as JobPhoto, jobId: input.jobId };
+      return { photo: data as JobPhoto, jobId: input.jobId, offline: false };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["job-photos", result.jobId] });
-      toast.success("Photo uploaded");
+      if (result.offline) {
+        queryClient.invalidateQueries({ queryKey: ["offline-photos", result.jobId] });
+      }
+      toast.success(result.offline ? "Photo saved offline" : "Photo uploaded");
     },
     onError: (error: Error) => {
       toast.error(`Failed to upload photo: ${error.message}`);
     },
+  });
+}
+
+/** Returns photo blobs stored offline for a given job, for local grid display. */
+export function useOfflinePhotos(jobId: string | undefined) {
+  return useQuery({
+    queryKey: ["offline-photos", jobId],
+    queryFn: async () => {
+      if (!jobId) return [];
+      const blobs = await getAllPhotoBlobs();
+      return blobs
+        .filter((b) => (b.metadata as { jobId: string }).jobId === jobId)
+        .map((b) => {
+          const meta = b.metadata as {
+            storagePath: string;
+            photoType: string;
+            notes: string | null;
+            takenAt: string;
+            measurements: Record<string, string> | null;
+          };
+          return {
+            id: `offline-${b.id}`,
+            blobUrl: URL.createObjectURL(b.blob),
+            photoType: meta.photoType,
+            notes: meta.notes,
+            takenAt: meta.takenAt,
+          };
+        });
+    },
+    enabled: !!jobId,
+    refetchInterval: 5000,
   });
 }
 

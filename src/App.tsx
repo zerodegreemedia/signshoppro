@@ -1,16 +1,34 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppShell } from "@/components/layout/AppShell";
-import Login from "@/pages/Login";
-import Signup from "@/pages/Signup";
-import Dashboard from "@/pages/Dashboard";
-import Jobs from "@/pages/Jobs";
-import NewJob from "@/pages/NewJob";
-import JobDetail from "@/pages/JobDetail";
-import Clients from "@/pages/Clients";
-import ClientDetail from "@/pages/ClientDetail";
-import EstimateBuilder from "@/pages/EstimateBuilder";
-import LogoRegenerate from "@/pages/LogoRegenerate";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy-loaded pages
+const Login = lazy(() => import("@/pages/Login"));
+const Signup = lazy(() => import("@/pages/Signup"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Jobs = lazy(() => import("@/pages/Jobs"));
+const NewJob = lazy(() => import("@/pages/NewJob"));
+const JobDetail = lazy(() => import("@/pages/JobDetail"));
+const Clients = lazy(() => import("@/pages/Clients"));
+const ClientDetail = lazy(() => import("@/pages/ClientDetail"));
+const EstimateBuilder = lazy(() => import("@/pages/EstimateBuilder"));
+const LogoRegenerate = lazy(() => import("@/pages/LogoRegenerate"));
+
+function PageLoader() {
+  return (
+    <div className="space-y-4 p-4">
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-4 w-72" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-6">
+        <Skeleton className="h-32 rounded-lg" />
+        <Skeleton className="h-32 rounded-lg" />
+        <Skeleton className="h-32 rounded-lg" />
+      </div>
+    </div>
+  );
+}
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -25,6 +43,7 @@ function PlaceholderPage({ title }: { title: string }) {
 
 function App() {
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       {/* Public routes */}
       <Route path="/login" element={<Login />} />
@@ -50,6 +69,7 @@ function App() {
         <Route path="/ai/logo" element={<LogoRegenerate />} />
       </Route>
     </Routes>
+    </Suspense>
   );
 }
 
