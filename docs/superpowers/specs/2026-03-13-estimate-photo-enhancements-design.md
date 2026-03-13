@@ -200,12 +200,13 @@ When MeasurementOverlay is in edit mode, **swipe navigation is disabled**. Taps 
 ```typescript
 interface MeasurementOverlayProps {
   photoId: string;
-  imageRef: React.RefObject<HTMLImageElement>;
   lines: MeasurementLine[];
   mode: 'view' | 'edit';
   onLinesChange?: (lines: MeasurementLine[]) => void;
 }
 ```
+
+Note: `imageRef` is not needed — the SVG overlay uses `absolute inset-0` positioning to match the parent container dimensions, and uses its own `svgRef` for coordinate conversion.
 
 ## 4. Photo Gallery Improvements
 
