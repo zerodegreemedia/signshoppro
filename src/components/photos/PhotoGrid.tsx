@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Camera, CloudOff } from "lucide-react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { Camera, CloudOff, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useJobPhotos, useOfflinePhotos } from "@/hooks/usePhotos";
 import { PhotoViewer } from "./PhotoViewer";
 import { PHOTO_TYPES } from "@/lib/constants";
@@ -7,6 +7,7 @@ import type { JobPhoto } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 interface GridPhoto {
   id: string;
@@ -27,6 +28,7 @@ export function PhotoGrid({ jobId, onAddPhoto }: PhotoGridProps) {
   const [filter, setFilter] = useState<string>("all");
   const [selectedPhoto, setSelectedPhoto] = useState<JobPhoto | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [fullscreenIndex, setFullscreenIndex] = useState<number | null>(null);
 
   // Merge offline photos (shown first) with server photos
   const offlineItems: GridPhoto[] = (offlinePhotos ?? []).map((op) => ({
@@ -49,9 +51,16 @@ export function PhotoGrid({ jobId, onAddPhoto }: PhotoGridProps) {
       ? allPhotos
       : allPhotos.filter((p) => p.photo_type === filter);
 
-  const handlePhotoClick = (photo: JobPhoto) => {
+  // Server photos matching the current filter (for fullscreen swipe viewer)
+  const filteredServerPhotos: JobPhoto[] =
+    filter === "all"
+      ? (photos ?? [])
+      : (photos ?? []).filter((p) => p.photo_type === filter);
+
+  const handlePhotoClick = (photo: JobPhoto, index: number) => {
     setSelectedPhoto(photo);
-    setViewerOpen(true);
+    setViewerOpen(false);
+    setFullscreenIndex(index);
   };
 
   if (isLoading) {
@@ -119,7 +128,7 @@ export function PhotoGrid({ jobId, onAddPhoto }: PhotoGridProps) {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-          {filteredPhotos.map((photo) => {
+          {filteredPhotos.map((photo, index) => {
             const typeLabel =
               PHOTO_TYPES.find((t) => t.value === photo.photo_type)?.label ??
               photo.photo_type;
@@ -129,9 +138,8 @@ export function PhotoGrid({ jobId, onAddPhoto }: PhotoGridProps) {
                 type="button"
                 onClick={() => {
                   if (!photo.isOffline) {
-                    // Find the full JobPhoto from server data for the viewer
                     const full = (photos ?? []).find((p) => p.id === photo.id);
-                    if (full) handlePhotoClick(full);
+                    if (full) handlePhotoClick(full, index);
                   }
                 }}
                 className="relative aspect-square rounded-lg overflow-hidden group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -160,12 +168,172 @@ export function PhotoGrid({ jobId, onAddPhoto }: PhotoGridProps) {
         </div>
       )}
 
-      {/* Photo viewer dialog */}
+      {/* Detail viewer dialog (opened from fullscreen info button) */}
       <PhotoViewer
         photo={selectedPhoto}
         open={viewerOpen}
         onOpenChange={setViewerOpen}
       />
+
+      {/* Fullscreen swipe viewer */}
+      {fullscreenIndex !== null && (
+        <FullscreenSwipeViewer
+          photos={filteredServerPhotos}
+          initialIndex={fullscreenIndex}
+          onClose={() => setFullscreenIndex(null)}
+          onOpenDetail={(photo) => {
+            setSelectedPhoto(photo);
+            setViewerOpen(true);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ─── Fullscreen swipe viewer ─── */
+
+interface FullscreenSwipeViewerProps {
+  photos: JobPhoto[];
+  initialIndex: number;
+  onClose: () => void;
+  onOpenDetail: (photo: JobPhoto) => void;
+}
+
+function FullscreenSwipeViewer({
+  photos,
+  initialIndex,
+  onClose,
+  onOpenDetail,
+}: FullscreenSwipeViewerProps) {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const touchStartX = useRef<number | null>(null);
+  const touchDeltaX = useRef(0);
+
+  const photo = photos[currentIndex];
+  if (!photo) return null;
+
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex < photos.length - 1;
+
+  const goNext = useCallback(() => {
+    if (hasNext) setCurrentIndex((i) => i + 1);
+  }, [hasNext]);
+
+  const goPrev = useCallback(() => {
+    if (hasPrev) setCurrentIndex((i) => i - 1);
+  }, [hasPrev]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight") goNext();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose, goPrev, goNext]);
+
+  // Touch swipe handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchDeltaX.current = 0;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    touchDeltaX.current = e.touches[0].clientX - touchStartX.current;
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    const SWIPE_THRESHOLD = 50;
+    if (touchDeltaX.current < -SWIPE_THRESHOLD) goNext();
+    else if (touchDeltaX.current > SWIPE_THRESHOLD) goPrev();
+    touchStartX.current = null;
+    touchDeltaX.current = 0;
+  }, [goNext, goPrev]);
+
+  const typeLabel =
+    PHOTO_TYPES.find((t) => t.value === photo.photo_type)?.label ??
+    photo.photo_type;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black flex flex-col"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Top bar */}
+      <div className="flex items-center justify-between p-3 text-white shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-white hover:bg-white/20 h-10 w-10"
+          onClick={onClose}
+        >
+          <X className="h-5 w-5" />
+        </Button>
+        <div className="text-sm font-medium">
+          <Badge variant="secondary" className="bg-white/20 text-white border-0">
+            {typeLabel}
+          </Badge>
+          <span className="ml-2 text-white/70">
+            {currentIndex + 1} / {photos.length}
+          </span>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-white hover:bg-white/20 text-xs"
+          onClick={() => onOpenDetail(photo)}
+        >
+          Details
+        </Button>
+      </div>
+
+      {/* Image area */}
+      <div className="flex-1 flex items-center justify-center relative min-h-0 px-2">
+        {/* Prev button (desktop) */}
+        {hasPrev && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute left-2 text-white hover:bg-white/20 h-12 w-12 hidden sm:flex z-10"
+            onClick={goPrev}
+          >
+            <ChevronLeft className="h-7 w-7" />
+          </Button>
+        )}
+
+        <img
+          key={photo.id}
+          src={photo.file_url}
+          alt={photo.notes || `${typeLabel} photo`}
+          className="max-w-full max-h-full object-contain select-none"
+          draggable={false}
+        />
+
+        {/* Next button (desktop) */}
+        {hasNext && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 text-white hover:bg-white/20 h-12 w-12 hidden sm:flex z-10"
+            onClick={goNext}
+          >
+            <ChevronRight className="h-7 w-7" />
+          </Button>
+        )}
+      </div>
+
+      {/* Bottom caption */}
+      {photo.notes && (
+        <div className="p-3 text-white/80 text-center text-sm shrink-0 truncate">
+          {photo.notes}
+        </div>
+      )}
     </div>
   );
 }
