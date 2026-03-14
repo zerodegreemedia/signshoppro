@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Trash2, MapPin, Ruler, Calendar } from "lucide-react";
 import { useDeletePhoto } from "@/hooks/usePhotos";
 import { RoleGate } from "@/components/auth/RoleGate";
-import { MeasurementOverlay } from "./MeasurementOverlay";
+import { MeasurementOverlay, AnnotationEditor, MeasureButton } from "./MeasurementOverlay";
 import { PHOTO_TYPES } from "@/lib/constants";
 import type { JobPhoto } from "@/types/database";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ interface PhotoViewerProps {
 export function PhotoViewer({ photo, open, onOpenChange }: PhotoViewerProps) {
   const deletePhoto = useDeletePhoto();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [annotating, setAnnotating] = useState(false);
 
   if (!photo) return null;
 
@@ -67,11 +68,6 @@ export function PhotoViewer({ photo, open, onOpenChange }: PhotoViewerProps) {
         }).format(new Date(photo.created_at))
       : null;
 
-  const showMeasurementOverlay =
-    photo.photo_type === "measurement" &&
-    photo.measurements &&
-    (photo.measurements.width || photo.measurements.height);
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0">
@@ -89,8 +85,18 @@ export function PhotoViewer({ photo, open, onOpenChange }: PhotoViewerProps) {
             alt={photo.notes || `${typeLabel} photo`}
             className="w-full object-contain max-h-[50vh]"
           />
-          {showMeasurementOverlay && photo.measurements && (
+          {/* View-only measurement lines */}
+          {!annotating && photo.measurements && (
             <MeasurementOverlay measurements={photo.measurements} />
+          )}
+          {/* Interactive annotation editor */}
+          {annotating && (
+            <AnnotationEditor
+              photoId={photo.id}
+              jobId={photo.job_id}
+              measurements={photo.measurements}
+              onClose={() => setAnnotating(false)}
+            />
           )}
         </div>
 
@@ -131,6 +137,15 @@ export function PhotoViewer({ photo, open, onOpenChange }: PhotoViewerProps) {
               <span>{formattedDate}</span>
             </div>
           )}
+
+          {/* Measurement annotation — admin only */}
+          <RoleGate requiredRole="admin">
+            {!annotating && (
+              <div>
+                <MeasureButton onClick={() => setAnnotating(true)} />
+              </div>
+            )}
+          </RoleGate>
 
           {/* Delete button — admin only */}
           <RoleGate requiredRole="admin">
